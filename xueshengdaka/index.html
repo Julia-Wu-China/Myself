@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程管理系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onload="init()">
+    <header>
+        <div class="container">
+            <h1>📚 课程管理系统</h1>
+        </div>
+    </header>
+
+    <div class="nav-tabs" id="navTabs">
+        <div class="nav-tab active" data-tab="student">学生管理</div>
+        <div class="nav-tab" data-tab="payment">缴费记录</div>
+        <div class="nav-tab" data-tab="course">课程录入</div>
+        <div class="nav-tab" data-tab="schedule">全员课表</div>
+        <div class="nav-tab" data-tab="detail">学生详情</div>
+        <div class="nav-tab" data-tab="stats">课时统计</div>
+        <div class="nav-tab" data-tab="attendance">今日签到</div>
+    </div>
+
+    <div class="container">
+        <!-- 学生选择区域 -->
+        <div class="tab-content active" id="tab-student">
+        <div class="section">
+            <div class="section-title">学生管理</div>
+            <div class="student-selector" id="studentSelector">
+                <div class="add-student-btn" onclick="showAddStudentModal()">+ 添加学生</div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 缴费记录 -->
+        <div class="tab-content" id="tab-payment">
+        <div class="section">
+            <div class="section-title">缴费记录</div>
+            <button class="btn btn-primary" onclick="showAddPaymentModal()">+ 添加缴费记录</button>
+            <table class="payment-table" id="paymentTable">
+                <thead>
+                    <tr>
+                        <th>缴费日期</th>
+                        <th>机构名称</th>
+                        <th>金额（元）</th>
+                        <th>购买课时</th>
+                        <th>已用课时</th>
+                        <th>剩余课时</th>
+                        <th>有效截止日期</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="9" class="empty-state">暂无缴费记录</td></tr>
+                </tbody>
+            </table>
+        </div>
+        </div>
+
+        <!-- 课程录入表单 -->
+        <div class="tab-content" id="tab-course">
+        <div class="section">
+            <div class="section-title">课程录入</div>
+            <form id="courseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>学生姓名</label>
+                        <select id="studentName" required>
+                            <option value="">请选择学生</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>课程名称</label>
+                        <input type="text" id="courseName" placeholder="如：数学一对一" required>
+                    </div>
+                    <div class="form-group">
+                        <label>课时数量 <span style="color:#999;font-weight:normal;">(不填视为无限)</span></label>
+                        <input type="number" id="totalHours" min="0" placeholder="请输入课时数，不填视为无限">
+                    </div>
+                    <div class="form-group">
+                        <label>关联缴费记录</label>
+                        <select id="paymentId">
+                            <option value="">不关联（直接录入）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>固定上课星期</label>
+                        <div class="checkbox-group" id="weekdayCheckboxes">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="0">
+                                <span>周一</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="1">
+                                <span>周二</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="2">
+                                <span>周三</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="3">
+                                <span>周四</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="4">
+                                <span>周五</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="5">
+                                <span>周六</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="weekdays" value="6">
+                                <span>周日</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>各星期上课时间设置</label>
+                    <div class="weekday-time-panel" id="weekdayTimePanel">
+                        <div class="empty-state">
+                            <p>请先选择上课星期</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>上课地点 <span style="color:#999;font-weight:normal;">(选填)</span></label>
+                        <input type="text" id="classLocation" placeholder="如：教室A-101">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>课程开始日期</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>课程有效截止日期 <span style="color:#999;font-weight:normal;">(关联缴费记录时自动读取)</span></label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">提交课程</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">重置表单</button>
+                </div>
+            </form>
+        </div>
+        </div>
+
+        <!-- 全员总课表 -->
+        <div class="tab-content" id="tab-schedule">
+        <div class="section">
+            <div class="section-title">全员总课表</div>
+            <div class="filter-bar">
+                <select id="scheduleStudentFilter" onchange="renderAllSchedule()">
+                    <option value="">全部学生</option>
+                </select>
+                <input type="date" id="scheduleStartDate" placeholder="开始日期" value="2026-02-25">
+                <input type="date" id="scheduleEndDate" placeholder="结束日期" value="2026-05-25">
+                <button class="btn btn-secondary" onclick="renderAllSchedule()">查询</button>
+            </div>
+            <div class="schedule-container">
+                <table class="schedule-table" id="allScheduleTable">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>周一</th>
+                            <th>周二</th>
+                            <th>周三</th>
+                            <th>周四</th>
+                            <th>周五</th>
+                            <th>周六</th>
+                            <th>周日</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="8" class="empty-state">暂无课程安排</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        </div>
+
+        <!-- 单学生课程详情 -->
+        <div class="tab-content" id="tab-detail">
+        <div class="section">
+            <div class="section-title">学生课程详情</div>
+            <div class="filter-bar">
+                <select id="detailStudentFilter" onchange="renderStudentCourses()">
+                    <option value="">全部学生</option>
+                </select>
+                <input type="date" id="detailStartDate" value="2026-02-25">
+                <input type="date" id="detailEndDate" value="2026-05-25">
+                <button class="btn btn-secondary" onclick="renderStudentCourses()">查询</button>
+            </div>
+            <div id="studentCourseDetail">
+                <div class="empty-state">
+                    <p>请先选择学生查看课程详情</p>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 课时统计 -->
+        <div class="tab-content" id="tab-stats">
+        <div class="section">
+            <div class="section-title">课时统计</div>
+            <div class="filter-row" id="statsFilterRow">
+                <select id="statsStudentFilter" class="filter-select">
+                    <option value="">全部学生</option>
+                </select>
+                <input type="date" id="statsStartDate" class="filter-date">
+                <input type="date" id="statsEndDate" class="filter-date">
+                <button class="btn btn-primary" onclick="renderStats()">查询</button>
+            </div>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">已消耗课时</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">剩余课时</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">已消费金额（元）</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">总缴费金额（元）</div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 签到操作 -->
+        <div class="tab-content" id="tab-attendance">
+        <div class="section">
+            <div class="section-title">今日签到</div>
+            <div id="attendanceSection">
+                <div class="empty-state">
+                    <p>请先选择学生查看签到</p>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- 添加学生模态框 -->
+    <div class="modal-overlay" id="addStudentModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>添加学生</h3>
+                <button class="modal-close" onclick="closeAddStudentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>学生姓名</label>
+                    <input type="text" id="newStudentName" placeholder="请输入学生姓名">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddStudentModal()">取消</button>
+                <button class="btn btn-primary" onclick="addStudent()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加缴费记录模态框 -->
+    <div class="modal-overlay" id="addPaymentModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>添加缴费记录</h3>
+                <button class="modal-close" onclick="closeAddPaymentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>缴费日期</label>
+                        <input type="date" id="paymentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>机构名称</label>
+                        <input type="text" id="paymentOrganization" placeholder="如：XX教育机构" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>缴费金额（元）</label>
+                        <input type="number" id="paymentAmount" min="0" step="0.01" placeholder="请输入金额" required>
+                    </div>
+                    <div class="form-group">
+                        <label>购买课时数</label>
+                        <input type="number" id="paymentHours" min="1" placeholder="请输入课时数" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>有效截止日期</label>
+                        <input type="date" id="paymentEndDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>备注（可选）</label>
+                        <input type="text" id="paymentNote" placeholder="如：2024年春季学期学费">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAddPaymentModal()">取消</button>
+                <button class="btn btn-primary" onclick="addPayment()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑缴费记录模态框 -->
+    <div class="modal-overlay" id="editPaymentModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>编辑缴费记录</h3>
+                <button class="modal-close" onclick="closeEditPaymentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editPaymentId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>缴费日期</label>
+                        <input type="date" id="editPaymentDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>机构名称</label>
+                        <input type="text" id="editPaymentOrganization" placeholder="如：XX教育机构" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>缴费金额（元）</label>
+                        <input type="number" id="editPaymentAmount" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>购买课时数</label>
+                        <input type="number" id="editPaymentHours" min="1" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>已用课时（只读）</label>
+                        <input type="number" id="editPaymentUsedHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label>有效截止日期</label>
+                        <input type="date" id="editPaymentEndDate" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>备注（可选）</label>
+                    <textarea id="editPaymentNote" placeholder="如：2024年春季学期学费"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditPaymentModal()">取消</button>
+                <button class="btn btn-primary" onclick="updatePayment()">确认更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑课程模态框 -->
+    <div class="modal-overlay" id="editCourseModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>编辑课程</h3>
+                <button class="modal-close" onclick="closeEditCourseModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editCourseId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>课程名称</label>
+                        <input type="text" id="editCourseName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>课时数量</label>
+                        <input type="number" id="editTotalHours" min="1" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>固定上课星期</label>
+                        <div class="checkbox-group" id="editWeekdayCheckboxes">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="0">
+                                <span>周一</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="1">
+                                <span>周二</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="2">
+                                <span>周三</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="3">
+                                <span>周四</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="4">
+                                <span>周五</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="5">
+                                <span>周六</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="editWeekdays" value="6">
+                                <span>周日</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>各星期上课时间设置</label>
+                    <div class="weekday-time-panel" id="editWeekdayTimePanel">
+                        <div class="empty-state">
+                            <p>请先选择上课星期</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>上课地点</label>
+                        <input type="text" id="editClassLocation" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>课程开始日期</label>
+                        <input type="date" id="editStartDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label>课程有效截止日期</label>
+                        <input type="date" id="editEndDate" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditCourseModal()">取消</button>
+                <button class="btn btn-danger" onclick="deleteCourse()">删除课程</button>
+                <button class="btn btn-primary" onclick="updateCourse()">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 结束缴费记录模态框 -->
+    <div class="modal-overlay" id="endPaymentModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>结束缴费记录</h3>
+                <button class="modal-close" onclick="closeEndPaymentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="endPaymentId">
+                
+                <div class="form-group">
+                    <label>机构名称</label>
+                    <input type="text" id="endPaymentOrganization" readonly style="background-color: #f5f5f5;">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>缴费金额</label>
+                        <input type="text" id="endPaymentAmount" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label>总课时</label>
+                        <input type="number" id="endPaymentTotalHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>已用课时</label>
+                        <input type="number" id="endPaymentUsedHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label>剩余课时</label>
+                        <input type="number" id="endPaymentRemainingHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <label style="font-weight: 600; margin-bottom: 10px; display: block;">请选择处理方式：</label>
+                    <div class="refund-options">
+                        <label class="refund-option selected">
+                            <input type="radio" name="refundType" value="refund" checked>
+                            <div class="refund-option-content">
+                                <div class="refund-option-title">💰 退费</div>
+                                <div class="refund-option-desc">按剩余课时比例退还金额</div>
+                            </div>
+                            <div class="refund-amount" id="endPaymentRefundAmount"></div>
+                        </label>
+                        <label class="refund-option">
+                            <input type="radio" name="refundType" value="no-refund">
+                            <div class="refund-option-content">
+                                <div class="refund-option-title">❌ 不退费</div>
+                                <div class="refund-option-desc">金额不变，剩余课时清零，费用计入累计消费</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEndPaymentModal()">取消</button>
+                <button class="btn btn-primary" onclick="endPayment()">确认结束</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 签到模态框 -->
+    <div class="modal-overlay" id="attendanceModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>签到课程</h3>
+                <button class="modal-close" onclick="closeAttendanceModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="attendanceCourseId">
+                <div class="form-group">
+                    <label>课程名称</label>
+                    <input type="text" id="attendanceCourseName" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>上课时间</label>
+                    <input type="text" id="attendanceCourseTime" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>上课地点</label>
+                    <input type="text" id="attendanceCourseLocation" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>关联缴费</label>
+                    <input type="text" id="attendancePaymentInfo" readonly style="background-color: #f5f5f5;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAttendanceModal()">取消</button>
+                <button class="btn btn-success" onclick="confirmAttendance()">确认签到</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
