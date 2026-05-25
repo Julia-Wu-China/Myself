@@ -14,49 +14,62 @@
     </header>
 
     <div class="nav-tabs" id="navTabs">
-        <div class="nav-tab active" data-tab="student">学生管理</div>
-        <div class="nav-tab" data-tab="payment">缴费记录</div>
-        <div class="nav-tab" data-tab="course">课程录入</div>
+        <div class="nav-tab" data-tab="attendance">今日签到</div>
         <div class="nav-tab" data-tab="schedule">全员课表</div>
         <div class="nav-tab" data-tab="detail">学生详情</div>
         <div class="nav-tab" data-tab="stats">课时统计</div>
-        <div class="nav-tab" data-tab="attendance">今日签到</div>
+        <div class="nav-tab active" data-tab="student">缴费记录</div>
+        <div class="nav-tab" data-tab="course">课程录入</div>
     </div>
 
     <div class="container">
-        <!-- 学生选择区域 -->
+        <!-- 缴费记录和学生管理 -->
         <div class="tab-content active" id="tab-student">
         <div class="section">
-            <div class="section-title">学生管理</div>
-            <div class="student-selector" id="studentSelector">
-                <div class="add-student-btn" onclick="showAddStudentModal()">+ 添加学生</div>
-            </div>
-        </div>
-        </div>
-
-        <!-- 缴费记录 -->
-        <div class="tab-content" id="tab-payment">
-        <div class="section">
             <div class="section-title">缴费记录</div>
+            <div class="filter-bar">
+                <select id="paymentOrgFilter">
+                    <option value="" selected>全部机构</option>
+                </select>
+                <select id="paymentStatusFilter">
+                    <option value="">全部状态</option>
+                    <option value="active" selected>使用中</option>
+                    <option value="ended">已结束</option>
+                    <option value="expired">已过期</option>
+                </select>
+                <input type="date" id="paymentStartDate" placeholder="开始日期">
+                <input type="date" id="paymentEndDate" placeholder="结束日期">
+                <button class="btn btn-secondary" onclick="renderPaymentTable()">查询</button>
+                <button class="btn btn-secondary" onclick="clearPaymentFilters()">重置</button>
+            </div>
             <button class="btn btn-primary" onclick="showAddPaymentModal()">+ 添加缴费记录</button>
             <table class="payment-table" id="paymentTable">
                 <thead>
                     <tr>
                         <th>缴费日期</th>
                         <th>机构名称</th>
-                        <th>金额（元）</th>
-                        <th>购买课时</th>
+                        <th>课包总价</th>
+                        <th>课包课时</th>
+                        <th>金额</th>
+                        <th>课时</th>
                         <th>已用课时</th>
                         <th>剩余课时</th>
-                        <th>有效截止日期</th>
+                        <th>截止日期</th>
                         <th>状态</th>
                         <th>操作</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="9" class="empty-state">暂无缴费记录</td></tr>
+                    <tr><td colspan="11" class="empty-state">暂无缴费记录</td></tr>
                 </tbody>
             </table>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">学生管理</div>
+            <div class="student-selector" id="studentSelector">
+                <div class="add-student-btn" onclick="showAddStudentModal()">+ 添加学生</div>
+            </div>
         </div>
         </div>
 
@@ -162,7 +175,7 @@
         <!-- 全员总课表 -->
         <div class="tab-content" id="tab-schedule">
         <div class="section">
-            <div class="section-title">全员总课表</div>
+            <div class="section-title">课程表</div>
             <div class="filter-bar">
                 <select id="scheduleStudentFilter" onchange="renderAllSchedule()">
                     <option value="">全部学生</option>
@@ -170,6 +183,8 @@
                 <input type="date" id="scheduleStartDate" placeholder="开始日期" value="2026-02-25">
                 <input type="date" id="scheduleEndDate" placeholder="结束日期" value="2026-05-25">
                 <button class="btn btn-secondary" onclick="renderAllSchedule()">查询</button>
+                <button class="btn btn-secondary" onclick="prevWeek()">上周</button>
+                <button class="btn btn-secondary" onclick="nextWeek()">下周</button>
             </div>
             <div class="schedule-container">
                 <table class="schedule-table" id="allScheduleTable">
@@ -226,22 +241,33 @@
                 <button class="btn btn-primary" onclick="renderStats()">查询</button>
             </div>
             <div class="stats-grid" id="statsGrid">
-                <div class="stat-card">
+                <div class="stat-card" onclick="showStatsDetail('used')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">已消耗课时</div>
+                    <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card yellow">
+                <div class="stat-card yellow" onclick="showStatsDetail('remaining')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">剩余课时</div>
+                    <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card green">
+                <div class="stat-card green" onclick="showStatsDetail('consumedAmount')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">已消费金额（元）</div>
+                    <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card red">
+                <div class="stat-card red" onclick="showStatsDetail('totalAmount')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">总缴费金额（元）</div>
+                    <div class="stat-action">查看明细 ›</div>
                 </div>
+            </div>
+            
+            <!-- 明细显示区域 -->
+            <div class="stats-detail-section" id="statsDetailSection" style="display:none;">
+                <div class="section-title" id="statsDetailTitle"></div>
+                <div id="statsDetailContent"></div>
+                <button class="btn btn-secondary" onclick="hideStatsDetail()" style="margin-top:10px;">隐藏明细</button>
             </div>
         </div>
         </div>
@@ -467,6 +493,44 @@
         </div>
     </div>
 
+    <!-- 结束课程模态框 -->
+    <div class="modal-overlay" id="endCourseModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>结束课程</h3>
+                <button class="modal-close" onclick="closeEndCourseModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="endCourseId">
+                <div class="form-group">
+                    <label>课程名称</label>
+                    <input type="text" id="endCourseName" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>学生姓名</label>
+                    <input type="text" id="endCourseStudent" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>总课时</label>
+                        <input type="number" id="endCourseTotalHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label>已用课时</label>
+                        <input type="number" id="endCourseUsedHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background-color: #fff3cd; border-radius: 4px;">
+                    <strong>⚠️ 注意：</strong>结束课程后，该课程将不再显示在课表中，且无法恢复。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEndCourseModal()">取消</button>
+                <button class="btn btn-danger" onclick="endCourse()">确认结束</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 结束缴费记录模态框 -->
     <div class="modal-overlay" id="endPaymentModal" style="display: none;">
         <div class="modal">
@@ -508,15 +572,15 @@
                     <label style="font-weight: 600; margin-bottom: 10px; display: block;">请选择处理方式：</label>
                     <div class="refund-options">
                         <label class="refund-option selected">
-                            <input type="radio" name="refundType" value="refund" checked>
+                            <input type="radio" name="refundType" value="refund" checked onchange="updateRemainingHoursDisplay()">
                             <div class="refund-option-content">
                                 <div class="refund-option-title">💰 退费</div>
-                                <div class="refund-option-desc">按剩余课时比例退还金额</div>
+                                <div class="refund-option-desc">按剩余课时比例退还金额，剩余课时清零</div>
                             </div>
                             <div class="refund-amount" id="endPaymentRefundAmount"></div>
                         </label>
                         <label class="refund-option">
-                            <input type="radio" name="refundType" value="no-refund">
+                            <input type="radio" name="refundType" value="no-refund" onchange="updateRemainingHoursDisplay()">
                             <div class="refund-option-content">
                                 <div class="refund-option-title">❌ 不退费</div>
                                 <div class="refund-option-desc">金额不变，剩余课时清零，费用计入累计消费</div>
@@ -561,6 +625,61 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeAttendanceModal()">取消</button>
                 <button class="btn btn-success" onclick="confirmAttendance()">确认签到</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 请假模态框 -->
+    <div class="modal-overlay" id="leaveModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>请假申请</h3>
+                <button class="modal-close" onclick="closeLeaveModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="leaveCourseId">
+                <div class="form-group">
+                    <label>课程名称</label>
+                    <input type="text" id="leaveCourseName" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>上课时间</label>
+                    <input type="text" id="leaveCourseTime" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>上课地点</label>
+                    <input type="text" id="leaveCourseLocation" readonly style="background-color: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>请假原因</label>
+                    <textarea id="leaveReason" placeholder="请输入请假原因" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeLeaveModal()">取消</button>
+                <button class="btn btn-warning" onclick="confirmLeave()">确认请假</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 课时明细模态框 -->
+    <div class="modal-overlay" id="statsDetailModal" style="display: none;">
+        <div class="modal" style="width: 80%; max-width: 1000px; max-height: 80vh;">
+            <div class="modal-header">
+                <h3 id="statsDetailTitle">课时明细</h3>
+                <button class="modal-close" onclick="closeStatsDetailModal()">×</button>
+            </div>
+            <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                <input type="hidden" id="statsDetailType">
+                <div class="detail-tabs">
+                    <button id="tab-used" class="detail-tab active" onclick="renderStatsDetail('used')">已消课明细</button>
+                    <button id="tab-remaining" class="detail-tab" onclick="renderStatsDetail('remaining')">未消课明细</button>
+                </div>
+                <div id="statsDetailContent">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeStatsDetailModal()">关闭</button>
             </div>
         </div>
     </div>
