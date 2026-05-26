@@ -59,6 +59,10 @@ header h1 {
     border-bottom-color: #667eea;
 }
 
+.mobile-break {
+    display: inline;
+}
+
 .tab-content {
     display: none;
 }
@@ -327,6 +331,15 @@ header h1 {
 
 .btn-success:hover {
     background: #43a047;
+}
+
+.btn-info {
+    background: #2196f3;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #1976d2;
 }
 
 .btn-group {
@@ -723,6 +736,46 @@ header h1 {
     margin-top: 4px;
 }
 
+.class-status {
+    font-size: 12px;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.class-status.classing {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.class-status.missed {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.status-expired {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.status-badge.status-pending {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.status-badge.status-leave {
+    background: #fff3e0;
+    color: #e65100;
+}
+
 .attendance-btn {
     padding: 8px 16px;
     border-radius: 6px;
@@ -985,9 +1038,15 @@ header h1 {
     }
     
     .nav-tab {
-        padding: 12px 12px;
-        font-size: 12px;
+        padding: 12px 8px;
+        font-size: 11px;
         flex-shrink: 0;
+        text-align: center;
+        line-height: 1.4;
+    }
+    
+    .mobile-break {
+        display: block;
     }
     
     .section {
@@ -1034,8 +1093,8 @@ header h1 {
     }
     
     .filter-bar {
-        flex-direction: column;
-        align-items: stretch;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
     }
     
@@ -1047,7 +1106,6 @@ header h1 {
     }
     
     .filter-bar .btn {
-        width: 100%;
         padding: 12px;
     }
     

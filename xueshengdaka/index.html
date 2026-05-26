@@ -15,12 +15,12 @@
 
     <div class="container">
         <div class="nav-tabs" id="navTabs">
-            <div class="nav-tab" data-tab="attendance">今日签到</div>
-            <div class="nav-tab" data-tab="schedule">全员课表</div>
-            <div class="nav-tab" data-tab="detail">学生详情</div>
-            <div class="nav-tab" data-tab="stats">课时统计</div>
-            <div class="nav-tab active" data-tab="student">缴费记录</div>
-            <div class="nav-tab" data-tab="course">课程录入</div>
+            <div class="nav-tab" data-tab="attendance">今日<span class="mobile-break">签到</span></div>
+            <div class="nav-tab" data-tab="schedule">全员<span class="mobile-break">课表</span></div>
+            <div class="nav-tab" data-tab="detail">学生<span class="mobile-break">详情</span></div>
+            <div class="nav-tab" data-tab="stats">课时<span class="mobile-break">统计</span></div>
+            <div class="nav-tab active" data-tab="student">缴费<span class="mobile-break">记录</span></div>
+            <div class="nav-tab" data-tab="course">课程<span class="mobile-break">录入</span></div>
         </div>
     </div>
 
@@ -106,7 +106,7 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>固定上课星期</label>
+                        <label>固定上课星期 <span style="color:#999;font-weight:normal;">(选填)</span></label>
                         <div class="checkbox-group" id="weekdayCheckboxes">
                             <label class="checkbox-item">
                                 <input type="checkbox" name="weekdays" value="0">
@@ -158,8 +158,8 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>课程开始日期</label>
-                        <input type="date" id="startDate" required>
+                        <label>课程开始日期 <span style="color:#999;font-weight:normal;">(选填，默认今天)</span></label>
+                        <input type="date" id="startDate">
                     </div>
                     <div class="form-group">
                         <label>课程有效截止日期 <span style="color:#999;font-weight:normal;">(关联缴费记录时自动读取)</span></label>
@@ -491,12 +491,12 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>课程开始日期</label>
-                        <input type="date" id="editStartDate" required>
+                        <label>课程开始日期 <span style="color:#999;font-weight:normal;">(选填)</span></label>
+                        <input type="date" id="editStartDate">
                     </div>
                     <div class="form-group">
-                        <label>课程有效截止日期</label>
-                        <input type="date" id="editEndDate" required>
+                        <label>课程有效截止日期 <span style="color:#999;font-weight:normal;">(选填)</span></label>
+                        <input type="date" id="editEndDate">
                     </div>
                 </div>
             </div>

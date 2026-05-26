@@ -937,23 +937,22 @@ document.getElementById('courseForm').addEventListener('submit', function(e) {
     const totalHours = document.getElementById('totalHours').value ? parseInt(document.getElementById('totalHours').value) : Infinity;
     const paymentId = document.getElementById('paymentId').value;
     const location = document.getElementById('classLocation').value;
-    const startDate = document.getElementById('startDate').value;
+    const startDate = document.getElementById('startDate').value || getToday();
     const endDate = document.getElementById('endDate').value;
     
     const checkboxes = document.querySelectorAll('#weekdayCheckboxes input:checked');
     const weekdays = Array.from(checkboxes).map(input => input.value);
     
-    if (!studentName || !courseName || !startDate) {
-        alert('请填写完整信息');
+    if (!studentName || !courseName) {
+        alert('请填写学生姓名和课程名称');
         return;
     }
     
-    if (weekdays.length === 0) {
-        alert('请选择至少一个上课星期');
-        return;
+    // 上课时间为选填，没有选择则schedule为空对象
+    let schedule = {};
+    if (weekdays.length > 0) {
+        schedule = getWeekdayTimeData('weekdayTimePanel', weekdays);
     }
-    
-    const schedule = getWeekdayTimeData('weekdayTimePanel', weekdays);
     
     const course = {
         id: generateId(),
@@ -1453,6 +1452,7 @@ function renderStats() {
     
     const courses = getCourses();
     const payments = getPayments();
+    const attendance = getAttendance();
     
     let filteredCourses = courses;
     let filteredPayments = payments;
@@ -1494,15 +1494,29 @@ function renderStats() {
         });
     }
     
+    // 计算已消耗课时（只计算签到记录，不包括请假）
     let totalUsedHours = 0;
     let totalRemainingHours = 0;
     let totalPaidAmount = 0;
     let totalConsumedAmount = 0;
     
+    // 根据签到记录计算实际已消耗课时
+    const filteredCourseIds = filteredCourses.map(c => c.id);
+    const filteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
+    
+    // 统计每个课程的签到次数
+    const courseAttendanceCount = {};
+    filteredAttendance.forEach(record => {
+        courseAttendanceCount[record.courseId] = (courseAttendanceCount[record.courseId] || 0) + 1;
+    });
+    
     filteredCourses.forEach(course => {
-        totalUsedHours += course.usedHours || 0;
+        // 使用实际签到次数作为已用课时
+        const actualUsedHours = courseAttendanceCount[course.id] || 0;
+        totalUsedHours += actualUsedHours;
+        
         if (course.totalHours !== Infinity) {
-            totalRemainingHours += (course.totalHours - (course.usedHours || 0));
+            totalRemainingHours += (course.totalHours - actualUsedHours);
         }
     });
     
@@ -1533,20 +1547,22 @@ function renderAttendance() {
     const today = getToday();
     const todayDay = new Date().getDay();
     const adjustedDay = todayDay === 0 ? 6 : todayDay - 1;
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
     const container = document.getElementById('attendanceSection');
     
     // 获取今日请假记录
     const leaveRecords = getLeaveRecords();
     
-    // 获取历史未打卡的课程记录
+    // 获取历史未打卡的课程记录（已过期的未签到课程）
     const missedRecords = getMissedAttendance();
     
     let html = '<div class="attendance-list">';
     
-    // 先显示历史未打卡记录
+    // 先显示历史未打卡记录（已过期的未签到课程）
     if (missedRecords.length > 0) {
-        html += '<div class="missed-section"><h4>📋 历史未打卡</h4>';
+        html += '<div class="missed-section"><h4> 历史未打卡</h4>';
         
         missedRecords.forEach(record => {
             const course = courses.find(c => c.id === record.courseId);
@@ -1610,17 +1626,27 @@ function renderAttendance() {
             const payment = payments.find(p => p.id === course.paymentId);
             const remainingHours = payment ? (payment.totalHours - payment.usedHours) : '无限';
             
+            // 判断课程时间状态
+            const classEndTime = schedule.endTime;
+            const classStartTime = schedule.startTime;
+            const isClassOver = currentTime > classEndTime;
+            const isClassStarted = currentTime >= classStartTime;
+            const isClassNotStarted = currentTime < classStartTime;
+            
             html += `
                 <div class="attendance-item ${isSigned ? 'signed' : ''} ${isLeave ? 'leave' : ''}">
                     <div class="course-info">
                         <div class="course-name">${course.courseName}</div>
                         <div class="course-time">${schedule.startTime}-${schedule.endTime} | ${course.location || '-'} | 剩余${remainingHours}课时</div>
+                        ${isClassNotStarted ? '<div class="class-status">⏳ 未到上课时间</div>' : ''}
+                        ${isClassStarted && !isClassOver && !isSigned ? '<div class="class-status classing">🔴 上课中</div>' : ''}
+                        ${isClassOver && !isSigned ? '<div class="class-status missed">⚠️ 已过上课时间</div>' : ''}
                     </div>
                     <div class="attendance-actions">
-                        <button class="attendance-btn ${isSigned ? 'signed' : (isLeave ? 'disabled' : 'available')}" 
-                            onclick="${isLeave ? '' : (isSigned ? `cancelAttendanceToday('${course.id}')` : `showAttendanceModal('${course.id}', '${adjustedDay}')`)}"
-                            ${isLeave ? 'disabled' : ''}>
-                            ${isSigned ? '取消签到' : (isLeave ? '已请假' : '签到')}
+                        <button class="attendance-btn ${isSigned ? 'signed' : (isLeave ? 'disabled' : 'available')} ${isClassNotStarted && !isLeave ? 'disabled' : ''}" 
+                            onclick="${isLeave ? '' : (isClassNotStarted && !isLeave ? '' : (isSigned ? `cancelAttendanceToday('${course.id}')` : `showAttendanceModal('${course.id}', '${adjustedDay}')`))}"
+                            ${isLeave || (isClassNotStarted && !isLeave) ? 'disabled' : ''}>
+                            ${isSigned ? '取消签到' : (isLeave ? '已请假' : (isClassNotStarted ? '未到时间' : '签到'))}
                         </button>
                         <button class="leave-btn ${isLeave ? 'cancel-leave' : (isSigned ? 'disabled' : 'available')}" 
                             onclick="${isSigned ? '' : (isLeave ? `cancelLeave('${course.id}', '${today}')` : `showLeaveModal('${course.id}', '${adjustedDay}')`)}">
@@ -1642,12 +1668,14 @@ function renderAttendance() {
     container.innerHTML = html;
 }
 
-// 获取历史未打卡记录（今日之前的未签到且未请假课程）
+// 获取历史未打卡记录（已过期的未签到课程，不包括今天）
 function getMissedAttendance() {
     const courses = getCourses();
     const attendance = getAttendance();
     const leaveRecords = getLeaveRecords();
     const today = getToday();
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
     let missedRecords = [];
     
@@ -1768,6 +1796,17 @@ function confirmLeave() {
     
     // 获取要请假的日期（支持历史日期）
     const leaveDate = document.getElementById('leaveModal').dataset.leaveDate || getToday();
+    const today = getToday();
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    // 获取课程时间表
+    const todayDay = new Date().getDay();
+    const adjustedDay = todayDay === 0 ? 6 : todayDay - 1;
+    const schedule = course.schedule[adjustedDay];
+    
+    // 判断是否已过上课时间
+    const isClassOver = leaveDate < today || (leaveDate === today && currentTime > schedule.endTime);
     
     const leaveRecords = getLeaveRecords();
     
@@ -1785,15 +1824,57 @@ function confirmLeave() {
         courseName: course.courseName,
         date: leaveDate,
         time: new Date().toLocaleTimeString(),
-        reason: reason || '未填写原因'
+        reason: reason || '未填写原因',
+        isExtended: isClassOver // 标记是否已过期（需要顺延）
     };
     
     leaveRecords.push(newLeaveRecord);
     saveLeaveRecords(leaveRecords);
     
+    // 如果是已过期的请假，自动处理顺延
+    if (isClassOver && leaveDate === today) {
+        // 今日已过上课时间请假，自动顺延到下次课程
+        const nextDate = getNextClassDate(course, today);
+        if (nextDate) {
+            alert(`请假成功！由于已过上课时间，课程已顺延至 ${nextDate}`);
+        } else {
+            alert('请假成功！');
+        }
+    } else {
+        alert('请假成功！');
+    }
+    
     closeLeaveModal();
     renderAttendance();
-    alert('请假成功');
+}
+
+// 获取下次课程日期
+function getNextClassDate(course, fromDate) {
+    const courseSchedule = course.schedule;
+    const weekdays = Object.keys(courseSchedule);
+    const fromDateObj = new Date(fromDate);
+    
+    // 从明天开始找
+    let searchDate = new Date(fromDateObj);
+    searchDate.setDate(searchDate.getDate() + 1);
+    
+    const courseEnd = course.endDate || '2999-12-31';
+    
+    // 最多找 30 天
+    for (let i = 0; i < 30; i++) {
+        const day = searchDate.getDay();
+        const adjustedDay = day === 0 ? 6 : day - 1;
+        const dateStr = formatDate(searchDate);
+        
+        // 检查是否是上课日且在课程有效期内
+        if (courseSchedule[adjustedDay] && dateStr <= courseEnd && dateStr >= course.startDate) {
+            return dateStr;
+        }
+        
+        searchDate.setDate(searchDate.getDate() + 1);
+    }
+    
+    return null;
 }
 
 // 取消今日签到
@@ -2006,7 +2087,7 @@ function renderStatsDetail(type) {
                     <td>${record.studentName}</td>
                     <td>${record.courseName}</td>
                     <td>
-                        <button class="btn btn-danger btn-sm" onclick="deleteAttendance('${record.id}')">删除</button>
+                        <button class="btn btn-warning btn-sm" onclick="cancelAttendanceRecord('${record.id}')">取消签到</button>
                     </td>
                 </tr>
             `;
@@ -2017,6 +2098,8 @@ function renderStatsDetail(type) {
     } else if (type === 'remaining') {
         // 未消课明细 - 显示应该上课但未签到的记录
         const today = getToday();
+        const now = new Date();
+        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
         let missedClasses = [];
         
         filteredCourses.forEach(course => {
@@ -2068,17 +2151,50 @@ function renderStatsDetail(type) {
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>操作</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>状态</th><th>操作</th></tr></thead><tbody>';
         
         missedClasses.forEach(record => {
+            const isPastDate = record.date < today;
+            const isToday = record.date === today;
+            const isBeforeClass = isToday && currentTime < record.schedule.startTime;
+            const isClassOver = isToday && currentTime > record.schedule.endTime;
+            
+            let statusText = '';
+            let statusClass = '';
+            
+            if (isPastDate || isClassOver) {
+                statusText = '已过期';
+                statusClass = 'status-expired';
+            } else if (isBeforeClass) {
+                statusText = '待签到';
+                statusClass = 'status-pending';
+            }
+            
+            let actionButtons = '';
+            
+            if (isPastDate || isClassOver) {
+                actionButtons = `
+                    <button class="btn btn-success btn-sm" onclick="addManualAttendance('${record.courseId}', '${record.date}')">补签</button>
+                    <button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>
+                `;
+            } else if (isBeforeClass) {
+                actionButtons = `<button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>`;
+            } else {
+                actionButtons = `
+                    <button class="btn btn-success btn-sm" onclick="addManualAttendance('${record.courseId}', '${record.date}')">签到</button>
+                    <button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>
+                `;
+            }
+            
             html += `
                 <tr>
                     <td>${record.date}</td>
                     <td>${record.schedule.startTime}-${record.schedule.endTime}</td>
                     <td>${record.studentName}</td>
                     <td>${record.courseName}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>
-                        <button class="btn btn-success btn-sm" onclick="addManualAttendance('${record.courseId}', '${record.date}')">补签</button>
+                        ${actionButtons}
                     </td>
                 </tr>
             `;
@@ -2174,8 +2290,8 @@ function renderStatsDetail(type) {
     }
 }
 
-function deleteAttendance(attendanceId) {
-    if (!confirm('确定要删除这条签到记录吗？')) {
+function cancelAttendanceRecord(attendanceId) {
+    if (!confirm('确定要取消这次签到吗？取消后该课程将回到未签到列表中。')) {
         return;
     }
     
@@ -2211,7 +2327,7 @@ function deleteAttendance(attendanceId) {
     renderStatsDetail(type);
     renderStats();
     
-    alert('签到记录已删除');
+    alert('签到已取消，该课程已回到未签到列表');
 }
 
 function addManualAttendance(courseId, date) {
