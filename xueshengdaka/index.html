@@ -41,6 +41,7 @@
                 <select id="paymentStatusFilter">
                     <option value="">全部状态</option>
                     <option value="active" selected>使用中</option>
+                    <option value="unused">未使用</option>
                     <option value="ended">已结束</option>
                     <option value="expired">已过期</option>
                 </select>
@@ -102,14 +103,28 @@
                         <input type="number" id="totalHours" min="0" placeholder="请输入课时数，不填视为无限">
                     </div>
                     <div class="form-group">
-                        <label>关联缴费记录</label>
-                        <select id="paymentId">
-                            <option value="">不关联（直接录入）</option>
-                        </select>
+                        <label>关联缴费记录 <span style="color:#999;font-weight:normal;">(可多选)</span></label>
+                        <div id="paymentMultiSelect" class="multi-select-container">
+                            <div class="multi-select-header" onclick="togglePaymentSelect()">
+                                <span id="paymentSelectText">请选择缴费记录</span>
+                                <span class="arrow">▼</span>
+                            </div>
+                            <div id="paymentSelectDropdown" class="multi-select-dropdown" style="display: none;">
+                                <div class="search-box">
+                                    <input type="text" id="paymentSearchInput" placeholder="搜索缴费记录..." onkeyup="filterPaymentOptions()">
+                                </div>
+                                <div class="select-all">
+                                    <label><input type="checkbox" id="selectAllPayments"> 全选</label>
+                                </div>
+                                <div id="paymentOptionsList"></div>
+                            </div>
+                            <div id="selectedPayments" class="selected-items"></div>
+                        </div>
+                        <input type="hidden" id="paymentId" value="">
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row full-width">
                     <div class="form-group">
                         <label>固定上课星期 <span style="color:#999;font-weight:normal;">(选填)</span></label>
                         <div class="checkbox-group" id="weekdayCheckboxes">
@@ -259,6 +274,7 @@
                 <input type="date" id="statsStartDate" class="filter-date">
                 <input type="date" id="statsEndDate" class="filter-date">
                 <button class="btn btn-primary" onclick="renderStats()">查询</button>
+                <button class="btn btn-secondary" onclick="resetStatsFilters()">重置</button>
             </div>
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card" onclick="showStatsDetail('used')">
@@ -266,17 +282,22 @@
                     <div class="stat-label">已消耗课时</div>
                     <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card yellow" onclick="showStatsDetail('remaining')">
+                <div class="stat-card yellow" onclick="showStatsDetail('missed')">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">请假记录</div>
+                    <div class="stat-action">查看明细 ›</div>
+                </div>
+                <div class="stat-card green" onclick="showStatsDetail('remaining')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">剩余课时</div>
                     <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card green" onclick="showStatsDetail('consumedAmount')">
+                <div class="stat-card red" onclick="showStatsDetail('consumedAmount')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">已消费金额（元）</div>
                     <div class="stat-action">查看明细 ›</div>
                 </div>
-                <div class="stat-card red" onclick="showStatsDetail('totalAmount')">
+                <div class="stat-card blue" onclick="showStatsDetail('totalAmount')">
                     <div class="stat-value">0</div>
                     <div class="stat-label">总缴费金额（元）</div>
                     <div class="stat-action">查看明细 ›</div>
@@ -433,16 +454,42 @@
                 <input type="hidden" id="editCourseId">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>课程名称</label>
-                        <input type="text" id="editCourseName" required>
+                        <label>学生名称</label>
+                        <input type="text" id="editStudentName" readonly style="background:#f5f5f5;color:#666;">
                     </div>
+                    <div class="form-group">
+                        <label>课程名称</label>
+                        <input type="text" id="editCourseName" readonly style="background:#f5f5f5;color:#666;">
+                    </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>课时数量</label>
                         <input type="number" id="editTotalHours" min="1" required>
                     </div>
+                    <div class="form-group">
+                        <label>关联缴费记录 <span style="color:#999;font-weight:normal;">(可多选)</span></label>
+                        <div id="editPaymentMultiSelect" class="multi-select-container">
+                            <div class="multi-select-header" onclick="toggleEditPaymentSelect()">
+                                <span id="editPaymentSelectText">请选择缴费记录</span>
+                                <span class="arrow">▼</span>
+                            </div>
+                            <div id="editPaymentSelectDropdown" class="multi-select-dropdown" style="display: none;">
+                                <div class="search-box">
+                                    <input type="text" id="editPaymentSearchInput" placeholder="搜索缴费记录..." onkeyup="filterEditPaymentOptions()">
+                                </div>
+                                <div class="select-all">
+                                    <label><input type="checkbox" id="editSelectAllPayments"> 全选</label>
+                                </div>
+                                <div id="editPaymentOptionsList"></div>
+                            </div>
+                            <div id="editSelectedPayments" class="selected-items"></div>
+                        </div>
+                        <input type="hidden" id="editPaymentId" value="">
+                    </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row full-width">
                     <div class="form-group">
                         <label>固定上课星期</label>
                         <div class="checkbox-group" id="editWeekdayCheckboxes">
@@ -687,7 +734,7 @@
                     <input type="text" id="attendanceCourseLocation" readonly style="background-color: #f5f5f5;">
                 </div>
                 <div class="form-group">
-                    <label>关联缴费</label>
+                    <label>关联缴费课时汇总</label>
                     <input type="text" id="attendancePaymentInfo" readonly style="background-color: #f5f5f5;">
                 </div>
             </div>
@@ -720,6 +767,19 @@
                     <input type="text" id="leaveCourseLocation" readonly style="background-color: #f5f5f5;">
                 </div>
                 <div class="form-group">
+                    <label>课时处理方式 <span style="color:red;">*</span></label>
+                    <div style="display: flex; gap: 20px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="leaveType" value="deduct" checked required>
+                            <span style="margin-left: 5px;">扣课时（按签到计费）</span>
+                        </label>
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="radio" name="leaveType" value="postpone" required>
+                            <span style="margin-left: 5px;">不扣课时（课程顺延）</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>请假原因</label>
                     <textarea id="leaveReason" placeholder="请输入请假原因" rows="3"></textarea>
                 </div>
@@ -742,7 +802,8 @@
                 <input type="hidden" id="statsDetailType">
                 <div class="detail-tabs">
                     <button id="tab-used" class="detail-tab active" onclick="renderStatsDetail('used')">已消课明细</button>
-                    <button id="tab-remaining" class="detail-tab" onclick="renderStatsDetail('remaining')">未消课明细</button>
+                    <button id="tab-missed" class="detail-tab" onclick="renderStatsDetail('missed')">未消课明细</button>
+                    <button id="tab-remaining" class="detail-tab" onclick="renderStatsDetail('remaining')">剩余课时明细</button>
                 </div>
                 <div id="statsDetailContent">
                 </div>

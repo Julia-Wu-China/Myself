@@ -1,49 +1,112 @@
 // 星期名称
 const WEEKDAY_NAMES = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
+// 将星期键转换为数字索引（支持数字和中文名称）
+function getDayIndex(dayKey) {
+    // 如果已经是数字，直接返回
+    const num = parseInt(dayKey);
+    if (!isNaN(num)) {
+        return num;
+    }
+    // 如果是中文名称，查找对应的索引
+    return WEEKDAY_NAMES.indexOf(dayKey);
+}
+
+// 获取schedule中某天的课程安排（支持多种数据格式）
+function getDaySchedule(course, dayIndex) {
+    const weekdayName = WEEKDAY_NAMES[dayIndex];
+    const s = course.schedule || {};
+    
+    // 格式1: 中文星期名称（如 '周三'）
+    if (s[weekdayName]) return s[weekdayName];
+    
+    // 格式2: 0-based 数字（0=周一, 3=周四）- 当前标准格式
+    if (s[String(dayIndex)]) return s[String(dayIndex)];
+    if (s[dayIndex]) return s[dayIndex];
+    
+    return null;
+}
+
 // 当前选中的学生
 let currentStudent = '';
 
+// ===== localStorage 缓存层 =====
+const _cache = {};
+
+function _getCache(key, defaultValue) {
+    if (!_cache[key]) {
+        _cache[key] = JSON.parse(localStorage.getItem(key) || defaultValue);
+    }
+    return _cache[key];
+}
+
+function _setCache(key, value) {
+    _cache[key] = value;
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function _clearCache(key) {
+    delete _cache[key];
+}
+
+function _clearAllCache() {
+    Object.keys(_cache).forEach(k => delete _cache[k]);
+}
+
+// 防抖函数
+function debounce(fn, delay) {
+    let timer;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// 带防抖的 renderAllSchedule（用于 onchange 快速切换时避免多次渲染）
+const debouncedRenderAllSchedule = debounce(() => renderAllSchedule(), 200);
+const debouncedRenderStats = debounce(() => renderStats(), 200);
+const debouncedRenderStudentCourses = debounce(() => renderStudentCourses(), 200);
+
 // localStorage 数据操作
 function getStudents() {
-    return JSON.parse(localStorage.getItem('students') || '[]');
+    return _getCache('students', '[]');
 }
 
 function saveStudents(students) {
-    localStorage.setItem('students', JSON.stringify(students));
+    _setCache('students', students);
 }
 
 function getPayments() {
-    return JSON.parse(localStorage.getItem('payments') || '[]');
+    return _getCache('payments', '[]');
 }
 
 function savePayments(payments) {
-    localStorage.setItem('payments', JSON.stringify(payments));
+    _setCache('payments', payments);
 }
 
 function getCourses() {
-    return JSON.parse(localStorage.getItem('courses') || '[]');
+    return _getCache('courses', '[]');
 }
 
 function saveCourses(courses) {
-    localStorage.setItem('courses', JSON.stringify(courses));
+    _setCache('courses', courses);
 }
 
 function getAttendance() {
-    return JSON.parse(localStorage.getItem('attendance') || '[]');
+    return _getCache('attendance', '[]');
 }
 
 function saveAttendance(attendance) {
-    localStorage.setItem('attendance', JSON.stringify(attendance));
+    _setCache('attendance', attendance);
 }
 
 // 请假记录操作
 function getLeaveRecords() {
-    return JSON.parse(localStorage.getItem('leaveRecords') || '[]');
+    return _getCache('leaveRecords', '[]');
 }
 
 function saveLeaveRecords(leaveRecords) {
-    localStorage.setItem('leaveRecords', JSON.stringify(leaveRecords));
+    _setCache('leaveRecords', leaveRecords);
 }
 
 // 数据导出功能
@@ -187,39 +250,115 @@ function getWeekEnd() {
 }
 
 // 学生颜色映射
-const studentColors = {
-    '学生A': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    '学生B': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    '学生C': 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    '学生D': 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    '学生E': 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    '学生F': 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-    '学生G': 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-    '学生H': 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
-};
+// 动态颜色缓存，确保同一学生始终使用同一颜色
+const studentColorCache = {};
 
-// 根据学生名获取颜色
+// 预定义一组颜色，用于轮换分配
+const COLOR_PALETTE = [
+    'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',  // 红色
+    'linear-gradient(135deg, #3498db 0%, #2980b9 100%)',  // 蓝色
+    'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)',  // 绿色
+    'linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%)',  // 紫色
+    'linear-gradient(135deg, #f39c12 0%, #e67e22 100%)',  // 橙色
+    'linear-gradient(135deg, #1abc9c 0%, #16a085 100%)',  // 青色
+    'linear-gradient(135deg, #e91e63 0%, #c2185b 100%)',  // 粉色
+    'linear-gradient(135deg, #00bcd4 0%, #0097a7 100%)',  // 蓝绿
+    'linear-gradient(135deg, #ff5722 0%, #d84315 100%)',  // 深橙
+    'linear-gradient(135deg, #795548 0%, #5d4037 100%)',  // 棕色
+    'linear-gradient(135deg, #607d8b 0%, #455a64 100%)',  // 灰蓝
+    'linear-gradient(135deg, #673ab7 0%, #512da8 100%)',  // 深紫
+];
+
+// 根据学生名获取颜色（同一学生始终返回同一颜色）
 function getStudentColor(studentName) {
-    return studentColors[studentName] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    if (studentColorCache[studentName]) {
+        return studentColorCache[studentName];
+    }
+    // 指定学生固定颜色
+    if (studentName === '花花') {
+        studentColorCache[studentName] = 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)'; // 蓝色
+        return studentColorCache[studentName];
+    }
+    if (studentName === '高磊') {
+        studentColorCache[studentName] = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)'; // 绿色
+        return studentColorCache[studentName];
+    }
+    // 简单哈希：将名字各字符码相加取模
+    let hash = 0;
+    for (let i = 0; i < studentName.length; i++) {
+        hash = (hash * 31 + studentName.charCodeAt(i)) & 0xffffffff;
+    }
+    if (hash < 0) hash = -hash;
+    const colorIndex = hash % COLOR_PALETTE.length;
+    studentColorCache[studentName] = COLOR_PALETTE[colorIndex];
+    return studentColorCache[studentName];
 }
 
-// 生成时间槽（每小时一个槽）
+// 生成时间槽（每30分钟一个槽）
 function generateTimeSlots() {
     const slots = [];
-    const times = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
-                   '14:00', '15:00', '16:00', '17:00', '18:00',
-                   '19:00', '20:00', '21:00'];
-    
-    for (let i = 0; i < times.length - 1; i++) {
-        slots.push(`${times[i]}-${times[i + 1]}`);
+    const courses = getCourses();
+    const MIN_MINUTES = 5 * 60 + 30;
+    const MAX_MINUTES = 12 * 60 + 30;
+    let minTime = MIN_MINUTES;
+    let maxTime = MAX_MINUTES;
+
+    courses.forEach(course => {
+        if (!course.schedule) return;
+        Object.values(course.schedule).forEach(time => {
+            if (time.startTime) {
+                const [hour, minute] = time.startTime.split(':').map(Number);
+                const total = hour * 60 + minute;
+                if (!isNaN(total) && total < minTime) minTime = total;
+            }
+            if (time.endTime) {
+                const [hour, minute] = time.endTime.split(':').map(Number);
+                const total = hour * 60 + minute;
+                if (!isNaN(total) && total > maxTime) maxTime = total;
+            }
+        });
+    });
+
+    minTime = Math.floor(minTime / 30) * 30;
+    maxTime = Math.ceil(maxTime / 30) * 30;
+    if (minTime < MIN_MINUTES) {
+        minTime = MIN_MINUTES;
     }
-    
+    if (maxTime <= minTime) {
+        maxTime = minTime + 30;
+    }
+
+    for (let t = minTime; t < maxTime; t += 30) {
+        const start = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+        const end = `${String(Math.floor((t + 30) / 60)).padStart(2, '0')}:${String((t + 30) % 60).padStart(2, '0')}`;
+        slots.push(`${start}-${end}`);
+    }
+
     return slots;
 }
 
-// 判断两个时间段是否重叠
+// 将时间标准化为 HH:MM 格式
+function normalizeTime(timeStr) {
+    const [hour, min] = timeStr.split(':').map(Number);
+    return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
+
+// 判断两个时间段是否重叠（严格模式，结束时间等于开始时间不算重叠）
 function isTimeOverlap(start1, end1, start2, end2) {
-    return start1 < end2 && start2 < end1;
+    const s1 = normalizeTime(start1);
+    const e1 = normalizeTime(end1);
+    const s2 = normalizeTime(start2);
+    const e2 = normalizeTime(end2);
+    return s1 < e2 && s2 < e1;
+}
+
+// 判断两个时间段是否重叠（宽松模式，用于课程分组，结束时间等于开始时间也算重叠）
+function isTimeOverlapLoose(start1, end1, start2, end2) {
+    const s1 = normalizeTime(start1);
+    const e1 = normalizeTime(end1);
+    const s2 = normalizeTime(start2);
+    const e2 = normalizeTime(end2);
+    return s1 <= e2 && s2 <= e1;
 }
 
 // 计算课程时长（分钟）
@@ -370,6 +509,7 @@ function renderPaymentTable() {
         if (statusFilter) {
             const status = getPaymentStatus(payment);
             if (statusFilter === 'active' && status.text !== '使用中') return false;
+            if (statusFilter === 'unused' && status.text !== '未使用') return false;
             if (statusFilter === 'ended' && status.text !== '已结束') return false;
             if (statusFilter === 'expired' && status.text !== '已过期') return false;
         }
@@ -472,23 +612,238 @@ function clearPaymentFilters() {
     renderPaymentTable();
 }
 
-// 更新缴费下拉框
+// 更新缴费多选框
 function updatePaymentSelect() {
-    const select = document.getElementById('paymentId');
+    const optionsList = document.getElementById('paymentOptionsList');
     const payments = getPayments();
     
-    select.innerHTML = '<option value="">不关联（直接录入）</option>';
+    optionsList.innerHTML = '';
     
     payments.forEach(payment => {
         const remainingHours = payment.totalHours - payment.usedHours;
-        if (remainingHours > 0) {
-            const option = document.createElement('option');
-            option.value = payment.id;
-            option.textContent = `${payment.date}-${payment.organization || '-'}-${payment.amount}元-剩余${remainingHours}课时`;
-            select.appendChild(option);
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = payment.id;
+        checkbox.id = `payment_${payment.id}`;
+        
+        const label = document.createElement('label');
+        label.htmlFor = `payment_${payment.id}`;
+        const noteText = payment.note ? `-${payment.note}` : '';
+        label.textContent = `${payment.date}-${payment.organization || '-'}-${payment.amount}元-剩余${remainingHours}课时${noteText}`;
+        
+        const div = document.createElement('div');
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        optionsList.appendChild(div);
+    });
+    
+    // 绑定全选事件
+    document.getElementById('selectAllPayments').onchange = function() {
+        const checkboxes = document.querySelectorAll('#paymentOptionsList input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateSelectedPayments();
+    };
+    
+    // 绑定单个选择事件
+    const checkboxes = document.querySelectorAll('#paymentOptionsList input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.onchange = updateSelectedPayments;
+    });
+}
+
+// 切换缴费选择下拉框显示/隐藏
+function togglePaymentSelect() {
+    const dropdown = document.getElementById('paymentSelectDropdown');
+    const header = document.querySelector('.multi-select-header');
+    
+    if (dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        header.classList.add('open');
+    } else {
+        dropdown.style.display = 'none';
+        header.classList.remove('open');
+    }
+}
+
+// 更新已选择的缴费记录显示
+function updateSelectedPayments() {
+    const checkboxes = document.querySelectorAll('#paymentOptionsList input[type="checkbox"]:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    const selectedContainer = document.getElementById('selectedPayments');
+    const hiddenInput = document.getElementById('paymentId');
+    const selectText = document.getElementById('paymentSelectText');
+    
+    hiddenInput.value = selectedIds.join(',');
+    
+    selectedContainer.innerHTML = '';
+    
+    if (selectedIds.length === 0) {
+        selectText.textContent = '请选择缴费记录';
+        return;
+    }
+    
+    selectText.textContent = `已选择 ${selectedIds.length} 条`;
+    
+    const payments = getPayments();
+    selectedIds.forEach(id => {
+        const payment = payments.find(p => p.id === id);
+        if (payment) {
+            const item = document.createElement('div');
+            item.className = 'selected-item';
+            item.innerHTML = `${payment.organization || '-'}<span class="remove-btn" onclick="removePaymentSelection('${id}')">×</span>`;
+            selectedContainer.appendChild(item);
         }
     });
 }
+
+// 移除单个已选择的缴费记录
+function removePaymentSelection(paymentId) {
+    const checkbox = document.getElementById(`payment_${paymentId}`);
+    if (checkbox) {
+        checkbox.checked = false;
+        updateSelectedPayments();
+    }
+}
+
+// 搜索过滤缴费记录选项
+function filterPaymentOptions() {
+    const searchText = document.getElementById('paymentSearchInput').value.toLowerCase();
+    const options = document.querySelectorAll('#paymentOptionsList div');
+    
+    options.forEach(option => {
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(searchText) ? 'block' : 'none';
+    });
+}
+
+// 点击外部关闭下拉框
+document.addEventListener('click', function(e) {
+    const container = document.getElementById('paymentMultiSelect');
+    if (container && !container.contains(e.target)) {
+        const dropdown = document.getElementById('paymentSelectDropdown');
+        const header = container.querySelector('.multi-select-header');
+        if (dropdown) dropdown.style.display = 'none';
+        if (header) header.classList.remove('open');
+    }
+    const editContainer = document.getElementById('editPaymentMultiSelect');
+    if (editContainer && !editContainer.contains(e.target)) {
+        const editDropdown = document.getElementById('editPaymentSelectDropdown');
+        const editHeader = editContainer.querySelector('.multi-select-header');
+        if (editDropdown) editDropdown.style.display = 'none';
+        if (editHeader) editHeader.classList.remove('open');
+    }
+});
+
+// ===== 编辑课程 - 关联缴费记录（可多选） =====
+// 切换编辑课程缴费选择下拉框
+function toggleEditPaymentSelect() {
+    const dropdown = document.getElementById('editPaymentSelectDropdown');
+    const header = document.querySelector('#editPaymentMultiSelect .multi-select-header');
+    if (dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        if (header) header.classList.add('open');
+    } else {
+        dropdown.style.display = 'none';
+        if (header) header.classList.remove('open');
+    }
+}
+
+// 更新编辑课程已选缴费记录显示
+function updateEditSelectedPayments() {
+    const checkboxes = document.querySelectorAll('#editPaymentOptionsList input[type="checkbox"]:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    const selectedContainer = document.getElementById('editSelectedPayments');
+    const hiddenInput = document.getElementById('editPaymentId');
+    const selectText = document.getElementById('editPaymentSelectText');
+    
+    hiddenInput.value = selectedIds.join(',');
+    selectedContainer.innerHTML = '';
+    
+    if (selectedIds.length === 0) {
+        selectText.textContent = '请选择缴费记录';
+        return;
+    }
+    
+    selectText.textContent = `已选择 ${selectedIds.length} 条`;
+    
+    const payments = getPayments();
+    selectedIds.forEach(id => {
+        const payment = payments.find(p => p.id === id);
+        if (payment) {
+            const item = document.createElement('div');
+            item.className = 'selected-item';
+            item.innerHTML = `${payment.organization || '-'}<span class="remove-btn" onclick="removeEditPaymentSelection('${id}')">×</span>`;
+            selectedContainer.appendChild(item);
+        }
+    });
+}
+
+// 移除编辑课程单个已选缴费记录
+function removeEditPaymentSelection(paymentId) {
+    const checkbox = document.getElementById(`editPayment_${paymentId}`);
+    if (checkbox) {
+        checkbox.checked = false;
+        updateEditSelectedPayments();
+    }
+}
+
+// 编辑课程缴费记录搜索过滤
+function filterEditPaymentOptions() {
+    const searchText = document.getElementById('editPaymentSearchInput').value.toLowerCase();
+    const options = document.querySelectorAll('#editPaymentOptionsList div');
+    options.forEach(option => {
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(searchText) ? 'block' : 'none';
+    });
+}
+
+// 初始化编辑课程缴费多选框（根据已有的paymentId预选）
+function initEditPaymentSelect(preSelectedIds) {
+    const optionsList = document.getElementById('editPaymentOptionsList');
+    const payments = getPayments();
+    
+    optionsList.innerHTML = '';
+    
+    const idSet = new Set(preSelectedIds || []);
+    
+    payments.forEach(payment => {
+        const remainingHours = payment.totalHours - payment.usedHours;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = payment.id;
+        checkbox.id = `editPayment_${payment.id}`;
+        if (idSet.has(payment.id)) {
+            checkbox.checked = true;
+        }
+        
+        const label = document.createElement('label');
+        label.htmlFor = `editPayment_${payment.id}`;
+        const noteText = payment.note ? `-${payment.note}` : '';
+        label.textContent = `${payment.date}-${payment.organization || '-'}-${payment.amount}元-剩余${remainingHours}课时${noteText}`;
+        
+        const div = document.createElement('div');
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        optionsList.appendChild(div);
+    });
+    
+    // 绑定全选事件
+    document.getElementById('editSelectAllPayments').onchange = function() {
+        const checkboxes = document.querySelectorAll('#editPaymentOptionsList input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateEditSelectedPayments();
+    };
+    
+    // 绑定单个选择事件
+    const checkboxes = document.querySelectorAll('#editPaymentOptionsList input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.onchange = updateEditSelectedPayments;
+    });
+    
+    // 更新已选显示
+    updateEditSelectedPayments();
+}
+// ===== 编辑课程缴费选择结束 =====
 
 // 添加缴费记录
 function showAddPaymentModal() {
@@ -508,13 +863,19 @@ function closeAddPaymentModal() {
 function addPayment() {
     const date = document.getElementById('paymentDate').value;
     const organization = document.getElementById('paymentOrganization').value;
-    const amount = parseFloat(document.getElementById('paymentAmount').value);
-    const hours = parseInt(document.getElementById('paymentHours').value);
+    const amountInput = document.getElementById('paymentAmount').value;
+    const hoursInput = document.getElementById('paymentHours').value;
     const endDate = document.getElementById('addPaymentEndDate').value;
     const note = document.getElementById('paymentNote').value;
     
-    if (!date || !organization || !amount || !hours || !endDate) {
-        alert('请填写完整信息');
+    // 金额可以为空或为0，默认为0
+    const amount = amountInput ? parseFloat(amountInput) : 0;
+    
+    // 课时数可以为空或为0，默认为0
+    const hours = hoursInput ? parseInt(hoursInput) : 0;
+    
+    if (!date || !organization || !endDate) {
+        alert('请填写缴费日期、机构名称和有效截止日期');
         return;
     }
     
@@ -679,38 +1040,48 @@ function closeRenewPaymentModal() {
 function renewPayment() {
     const paymentId = document.getElementById('renewPaymentId').value;
     const endDate = document.getElementById('renewEndDate').value;
-    const amount = parseFloat(document.getElementById('renewAmount').value);
-    const hours = parseInt(document.getElementById('renewHours').value);
+    const amountInput = document.getElementById('renewAmount').value;
+    const hoursInput = document.getElementById('renewHours').value;
     const note = document.getElementById('renewNote').value;
     
-    if (!endDate || !amount || !hours) {
-        alert('请填写完整信息');
+    // 金额可以为空或为0，默认为0
+    const amount = amountInput ? parseFloat(amountInput) : 0;
+    
+    // 课时数可以为空或为0，默认为0
+    const hours = hoursInput ? parseInt(hoursInput) : 0;
+    
+    if (!endDate) {
+        alert('请填写有效截止日期');
         return;
     }
     
     const payments = getPayments();
-    const paymentIndex = payments.findIndex(p => p.id === paymentId);
+    const originalPayment = payments.find(p => p.id === paymentId);
     
-    if (paymentIndex === -1) return;
+    if (!originalPayment) return;
     
-    const payment = payments[paymentIndex];
+    // 新建一条缴费记录
+    const newPayment = {
+        id: generateId(),
+        date: getToday(), // 缴费日期取今天
+        organization: originalPayment.organization, // 机构名称与原记录相同
+        amount: amount,
+        totalHours: hours,
+        usedHours: 0,
+        endDate: endDate,
+        status: 'active',
+        note: note || '',
+        originalAmount: amount,
+        originalTotalHours: hours
+    };
     
-    // 更新缴费记录：增加金额和课时
-    payment.amount += amount;
-    payment.totalHours += hours;
-    payment.endDate = endDate;
-    payment.status = 'active';
-    
-    if (note) {
-        payment.note = (payment.note || '') + '; ' + note;
-    }
-    
+    payments.push(newPayment);
     savePayments(payments);
     closeRenewPaymentModal();
     renderPaymentTable();
     updatePaymentSelect();
     
-    alert('续费成功');
+    alert('续费成功，已创建新的缴费记录');
 }
 
 // 编辑缴费记录
@@ -826,6 +1197,25 @@ function getWeekdayTimeData(panelId, weekdays) {
 }
 
 // 学生选择器渲染
+let _statsFiltersEventBound = false;
+
+function _bindStatsFilterEvents() {
+    if (_statsFiltersEventBound) return;
+    _statsFiltersEventBound = true;
+    
+    document.getElementById('statsStudentFilter')?.addEventListener('change', function() {
+        const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
+        updateStatsCourseFilter(this.value, filterOrg);
+        document.getElementById('statsCourseFilter').value = '';
+    });
+    
+    document.getElementById('statsOrgFilter')?.addEventListener('change', function() {
+        const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
+        updateStatsCourseFilter(filterStudent, this.value);
+        document.getElementById('statsCourseFilter').value = '';
+    });
+}
+
 function renderStudentSelector() {
     const students = getStudents();
     const selector = document.getElementById('studentSelector');
@@ -860,18 +1250,8 @@ function renderStudentSelector() {
     updateStatsOrgFilter();
     updateStatsCourseFilter();
     
-    // 添加筛选器联动事件
-    document.getElementById('statsStudentFilter')?.addEventListener('change', function() {
-        const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
-        updateStatsCourseFilter(this.value, filterOrg);
-        document.getElementById('statsCourseFilter').value = '';
-    });
-    
-    document.getElementById('statsOrgFilter')?.addEventListener('change', function() {
-        const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
-        updateStatsCourseFilter(filterStudent, this.value);
-        document.getElementById('statsCourseFilter').value = '';
-    });
+    // 筛选器联动事件只绑定一次
+    _bindStatsFilterEvents();
 }
 
 function updateStudentSelect() {
@@ -1054,13 +1434,16 @@ document.getElementById('courseForm').addEventListener('submit', function(e) {
         schedule = getWeekdayTimeData('weekdayTimePanel', weekdays);
     }
     
+    // 支持关联多个缴费记录
+    const paymentIds = paymentId ? paymentId.split(',').filter(id => id.trim()) : [];
+    
     const course = {
         id: generateId(),
         studentName,
         courseName,
         totalHours,
         usedHours: 0,
-        paymentId,
+        paymentId: paymentIds.length > 0 ? paymentIds.join(',') : '',
         schedule,
         location,
         startDate,
@@ -1071,16 +1454,6 @@ document.getElementById('courseForm').addEventListener('submit', function(e) {
     const courses = getCourses();
     courses.push(course);
     saveCourses(courses);
-    
-    // 如果关联了缴费记录，更新缴费的已用课时
-    if (paymentId) {
-        const payments = getPayments();
-        const payment = payments.find(p => p.id === paymentId);
-        if (payment) {
-            payment.usedHours += totalHours;
-            savePayments(payments);
-        }
-    }
     
     resetForm();
     renderAllSchedule();
@@ -1106,18 +1479,23 @@ function editCourse(courseId) {
     document.getElementById('editCourseId').value = course.id;
     document.getElementById('editCourseName').value = course.courseName;
     document.getElementById('editTotalHours').value = course.totalHours === Infinity ? '' : course.totalHours;
+    document.getElementById('editStudentName').value = course.studentName || '';
     document.getElementById('editClassLocation').value = course.location || '';
     document.getElementById('editStartDate').value = course.startDate;
     document.getElementById('editEndDate').value = course.endDate || '';
-    
+
     // 设置星期复选框
     const checkboxes = document.querySelectorAll('#editWeekdayCheckboxes input');
     const courseWeekdays = Object.keys(course.schedule);
     checkboxes.forEach(cb => {
         cb.checked = courseWeekdays.includes(cb.value);
     });
-    
+
     renderWeekdayTimePanel('editWeekdayCheckboxes', 'editWeekdayTimePanel', course.schedule);
+
+    // 初始化关联缴费记录多选框
+    const preSelectedIds = course.paymentId ? course.paymentId.split(',').filter(id => id.trim()) : [];
+    initEditPaymentSelect(preSelectedIds);
 }
 
 function closeEditCourseModal() {
@@ -1137,6 +1515,8 @@ function updateCourse() {
     const location = document.getElementById('editClassLocation').value;
     const startDate = document.getElementById('editStartDate').value;
     const endDate = document.getElementById('editEndDate').value;
+    const editPaymentId = document.getElementById('editPaymentId').value;
+    const editPaymentIds = editPaymentId ? editPaymentId.split(',').filter(id => id.trim()) : [];
     
     const checkboxes = document.querySelectorAll('#editWeekdayCheckboxes input:checked');
     const weekdays = Array.from(checkboxes).map(input => input.value);
@@ -1167,6 +1547,7 @@ function updateCourse() {
         location,
         startDate,
         endDate,
+        paymentId: editPaymentIds.length > 0 ? editPaymentIds.join(',') : '',
         schedule
     };
     
@@ -1206,12 +1587,8 @@ function deleteCourse() {
     
     if (course && course.paymentId) {
         const payments = getPayments();
-        const payment = payments.find(p => p.id === course.paymentId);
-        if (payment) {
-            payment.usedHours -= (course.usedHours || 0);
-            if (payment.usedHours < 0) payment.usedHours = 0;
-            savePayments(payments);
-        }
+        reverseFromLinkedPayments(course, payments, course.usedHours || 0);
+        savePayments(payments);
     }
     
     const newCourses = courses.filter(c => c.id !== courseId);
@@ -1274,14 +1651,18 @@ function renderAllSchedule() {
     
     if (scheduleStartDate || scheduleEndDate) {
         courses = courses.filter(course => {
-            const courseStart = course.startDate;
-            const courseEnd = course.endDate || '2999-12-31';
+            // 标准化日期格式（支持 2026-05-01 和 2026/05/01）
+            const normalizeDate = (d) => d ? d.replace(/\//g, '-') : '';
+            const courseStart = normalizeDate(course.startDate);
+            const courseEnd = normalizeDate(course.endDate) || '2999-12-31';
+            const filterStart = normalizeDate(scheduleStartDate);
+            const filterEnd = normalizeDate(scheduleEndDate);
             
             let isValid = true;
-            if (scheduleStartDate && courseEnd < scheduleStartDate) {
+            if (filterStart && courseEnd < filterStart) {
                 isValid = false;
             }
-            if (scheduleEndDate && courseStart > scheduleEndDate) {
+            if (filterEnd && courseStart > filterEnd) {
                 isValid = false;
             }
             return isValid;
@@ -1306,7 +1687,7 @@ function renderAllSchedule() {
     // 计算每个单元格的最大重叠课程数
     courses.forEach(course => {
         for (let day = 0; day < 7; day++) {
-            const daySchedule = course.schedule[day];
+            const daySchedule = getDaySchedule(course, day);
             if (!daySchedule) continue;
             
             const courseStart = daySchedule.startTime;
@@ -1340,11 +1721,13 @@ function renderAllSchedule() {
         }
     }
     
-    // 为每个课程计算其在表格中的位置
-    courses.forEach(course => {
-        for (let day = 0; day < 7; day++) {
-            const daySchedule = course.schedule[day];
-            if (!daySchedule) continue;
+    // 收集所有课程片段（按天分组）
+    const dayCourses = [];
+    for (let day = 0; day < 7; day++) {
+        dayCourses[day] = [];
+        courses.forEach(course => {
+            const daySchedule = getDaySchedule(course, day);
+            if (!daySchedule) return;
             
             const courseStart = daySchedule.startTime;
             const courseEnd = daySchedule.endTime;
@@ -1355,38 +1738,107 @@ function renderAllSchedule() {
             
             timeSlots.forEach((slot, index) => {
                 const [slotStart, slotEnd] = slot.split('-');
-                // 课程开始时间在当前时间槽内或等于槽开始时间
-                if (isTimeOverlap(slotStart, slotEnd, courseStart, courseStart)) {
+                const ss = normalizeTime(slotStart);
+                const se = normalizeTime(slotEnd);
+                const cs = normalizeTime(courseStart);
+                const ce = normalizeTime(courseEnd);
+                if (cs >= ss && cs < se) {
                     startSlotIndex = index;
                 }
-                // 课程结束时间在当前时间槽内
-                if (isTimeOverlap(slotStart, slotEnd, courseEnd, courseEnd)) {
+                if (ce > ss && ce <= se) {
                     endSlotIndex = index;
                 }
             });
             
             if (startSlotIndex >= 0 && endSlotIndex >= 0) {
-                const rowSpan = endSlotIndex - startSlotIndex + 1;
-                
-                // 添加到起始单元格
-                cellData[startSlotIndex][day].courses.push({
+                dayCourses[day].push({
                     course,
                     daySchedule,
-                    rowSpan
+                    startSlotIndex,
+                    endSlotIndex,
+                    rowSpan: endSlotIndex - startSlotIndex + 1
                 });
-                
-                // 更新最大跨越行数
-                if (rowSpan > cellData[startSlotIndex][day].maxRowSpan) {
-                    cellData[startSlotIndex][day].maxRowSpan = rowSpan;
-                }
-                
-                // 标记中间的单元格为已占用
-                for (let i = startSlotIndex + 1; i <= endSlotIndex; i++) {
-                    cellData[i][day].occupied = true;
+            }
+        });
+    }
+    
+    // 将时间重叠的课程分组到同一个起始单元格
+    for (let day = 0; day < 7; day++) {
+        // 按开始时间槽排序
+        dayCourses[day].sort((a, b) => a.startSlotIndex - b.startSlotIndex);
+        
+        const n = dayCourses[day].length;
+        if (n === 0) continue;
+        
+        // 使用并查集确保所有间接重叠的课程分到同一组
+        const parent = Array.from({length: n}, (_, i) => i);
+        function find(i) {
+            if (parent[i] !== i) parent[i] = find(parent[i]);
+            return parent[i];
+        }
+        function union(i, j) {
+            parent[find(i)] = find(j);
+        }
+        
+        // 找出所有重叠的课程对
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                const a = dayCourses[day][i];
+                const b = dayCourses[day][j];
+                if (isTimeOverlap(a.daySchedule.startTime, a.daySchedule.endTime, b.daySchedule.startTime, b.daySchedule.endTime)) {
+                    union(i, j);
                 }
             }
         }
-    });
+        
+        // 构建组
+        const groupMap = new Map();
+        for (let i = 0; i < n; i++) {
+            const root = find(i);
+            if (!groupMap.has(root)) groupMap.set(root, []);
+            groupMap.get(root).push(dayCourses[day][i]);
+        }
+        
+        // 将分组后的课程放入cellData
+        groupMap.forEach(group => {
+            const minStartSlot = Math.min(...group.map(g => g.startSlotIndex));
+            const maxEndSlot = Math.max(...group.map(g => g.endSlotIndex));
+            const groupRowSpan = maxEndSlot - minStartSlot + 1;
+            
+            const lanes = [];
+            group.sort((a, b) => a.startSlotIndex - b.startSlotIndex || a.endSlotIndex - b.endSlotIndex);
+            group.forEach(dc => {
+                let assignedLane = lanes.findIndex(lane => lane.student === dc.course.studentName && lane.endSlotIndex < dc.startSlotIndex);
+                if (assignedLane === -1) {
+                    assignedLane = lanes.findIndex(lane => lane.endSlotIndex < dc.startSlotIndex);
+                }
+                if (assignedLane === -1) {
+                    assignedLane = lanes.length;
+                    lanes.push({ endSlotIndex: -1, student: '' });
+                }
+                lanes[assignedLane] = { endSlotIndex: dc.endSlotIndex, student: dc.course.studentName };
+
+                cellData[minStartSlot][day].courses.push({
+                    course: dc.course,
+                    daySchedule: dc.daySchedule,
+                    rowSpan: groupRowSpan,
+                    originalStartSlot: dc.startSlotIndex,
+                    lane: assignedLane
+                });
+            });
+            
+            const laneCount = lanes.length;
+            if (groupRowSpan > cellData[minStartSlot][day].maxRowSpan) {
+                cellData[minStartSlot][day].maxRowSpan = groupRowSpan;
+            }
+            cellData[minStartSlot][day].laneCount = Math.max(cellData[minStartSlot][day].laneCount || 1, laneCount);
+            
+            // 标记该组覆盖的所有单元格为已占用
+            for (let i = minStartSlot + 1; i <= maxEndSlot; i++) {
+                cellData[i][day].occupied = true;
+            }
+        });
+    }
     
     // 生成表格HTML
     let html = '';
@@ -1399,8 +1851,8 @@ function renderAllSchedule() {
         for (let day = 0; day < 7; day++) {
             const cell = cellData[slotIndex][day];
             
-            if (cell.occupied) {
-                // 被合并的单元格，不输出
+            if (cell.occupied && cell.courses.length === 0) {
+                // 被合并的空单元格，不输出
                 continue;
             } else if (cell.courses.length === 0) {
                 // 空单元格
@@ -1414,31 +1866,34 @@ function renderAllSchedule() {
                     const c = cell.courses[0];
                     const time = `${c.daySchedule.startTime}-${c.daySchedule.endTime}`;
                     const bgColor = getStudentColor(c.course.studentName);
-                    // 根据实际时长计算高度（每分钟0.8px）
+                    // 根据实际时长计算高度（每分钟1px，与时间槽60px/小时对应）
                     const duration = getDurationMinutes(c.daySchedule.startTime, c.daySchedule.endTime);
-                    const height = duration * 0.8;
+                    const height = Math.max(56, duration * 1.0);
                     // 计算顶部偏移（相对于时间槽开始时间）
                     const slotStartTime = slotStart;
                     const offset = getDurationMinutes(slotStartTime, c.daySchedule.startTime);
-                    const marginTop = offset * 0.8;
+                    const marginTop = offset * 1.0;
                     html += `<td rowspan="${c.rowSpan}" style="vertical-align: top;"><div class="class-cell" onclick="editCourse('${c.course.id}')" style="background:${bgColor}; height:${height}px; margin-top:${marginTop}px;">${c.course.courseName}<br>${c.course.studentName}<br>${time}<br>${c.course.location}</div></td>`;
                 } else {
-                    // 多个课程重叠，横向并排显示
-                    let cellContent = '<div class="class-cell-multi">';
+                    // 多个课程重叠，按分配车道渲染
+                    const laneCount = cell.laneCount || Math.max(...cell.courses.map(c => c.lane || 0)) + 1;
+                    const totalHeight = maxRowSpan * 30;
+                    let cellContent = `<div class="class-cell-multi" style="height:${totalHeight}px;">`;
                     cell.courses.forEach(c => {
                         const time = `${c.daySchedule.startTime}-${c.daySchedule.endTime}`;
                         const bgColor = getStudentColor(c.course.studentName);
-                        // 根据实际时长计算高度（每分钟0.8px）
                         const duration = getDurationMinutes(c.daySchedule.startTime, c.daySchedule.endTime);
-                        const height = duration * 0.8;
-                        // 计算顶部偏移（相对于时间槽开始时间）
+                        const height = Math.max(56, duration * 1.0);
                         const slotStartTime = slotStart;
                         const offset = getDurationMinutes(slotStartTime, c.daySchedule.startTime);
-                        const marginTop = offset * 0.8;
-                        cellContent += `<div class="class-cell-item" onclick="editCourse('${c.course.id}')" style="background:${bgColor}; height:${height}px; margin-top:${marginTop}px;">${c.course.courseName}<br>${c.course.studentName}<br>${time}<br>${c.course.location}</div>`;
+                        const top = offset * 1.0;
+                        const baseWidth = 100 / laneCount;
+                        const width = baseWidth > 8 ? `calc(${baseWidth}% - 2px)` : `${baseWidth}%`;
+                        const left = `calc(${(c.lane || 0) * baseWidth}% + 1px)`;
+                        cellContent += `<div class="class-cell-item" onclick="editCourse('${c.course.id}')" style="background:${bgColor}; height:${height}px; top:${top}px; left:${left}; width:${width};">${c.course.courseName}<br>${c.course.studentName}<br>${time}<br>${c.course.location}</div>`;
                     });
                     cellContent += '</div>';
-                    html += `<td rowspan="${maxRowSpan}">${cellContent}</td>`;
+                    html += `<td rowspan="${maxRowSpan}" style="vertical-align: top;">${cellContent}</td>`;
                 }
             }
         }
@@ -1504,7 +1959,6 @@ function renderStudentCourses() {
     let html = '';
     
     courses.forEach(course => {
-        const payment = payments.find(p => p.id === course.paymentId);
         const remainingHours = course.totalHours === Infinity ? '无限' : (course.totalHours - (course.usedHours || 0));
         const usedHours = course.usedHours || 0;
         const totalHours = course.totalHours === Infinity ? '无限' : course.totalHours;
@@ -1513,6 +1967,19 @@ function renderStudentCourses() {
         Object.entries(course.schedule).forEach(([day, time]) => {
             scheduleHtml += `<div class="schedule-item"><span>${WEEKDAY_NAMES[parseInt(day)]}</span><span>${time.startTime}-${time.endTime}</span></div>`;
         });
+        
+        // 只显示还有剩余课时的关联缴费记录
+        const paymentIds = course.paymentId ? course.paymentId.split(',').map(id => id.trim()).filter(Boolean) : [];
+        const linkedPayments = paymentIds.map(id => payments.find(p => p.id === id)).filter(Boolean);
+        const activePayments = linkedPayments.filter(p => (p.totalHours - p.usedHours) > 0);
+        
+        let paymentHtml = '';
+        if (activePayments.length > 0) {
+            const paymentItems = activePayments.map(p => 
+                `${p.date} ${p.organization} ¥${p.amount}（剩余${p.totalHours - p.usedHours}课时）`
+            ).join('<br>');
+            paymentHtml = `<div class="course-card-payment">关联缴费：<br>${paymentItems}</div>`;
+        }
         
         html += `
             <div class="course-card">
@@ -1530,7 +1997,7 @@ function renderStudentCourses() {
                     <div style="font-weight:500;margin-bottom:8px;">上课时间：</div>
                     ${scheduleHtml}
                 </div>
-                ${payment ? `<div class="course-card-payment">关联缴费：${payment.date} ${payment.organization} ¥${payment.amount}</div>` : ''}
+                ${paymentHtml}
                 <div class="course-card-actions">
                     <button class="btn btn-secondary" onclick="editCourse('${course.id}')">编辑</button>
                     ${course.status === 'active' ? `<button class="btn btn-danger" style="background:#dc3545;color:white" onclick="showEndCourseModal('${course.id}')">结束</button>` : ''}
@@ -1543,6 +2010,29 @@ function renderStudentCourses() {
 }
 
 // 渲染课时统计
+function resetStatsFilters() {
+    document.getElementById('statsStudentFilter').value = '';
+    document.getElementById('statsOrgFilter').value = '';
+    document.getElementById('statsCourseFilter').value = '';
+    
+    // 设置默认日期：一年前到一年后
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const oneYearLater = new Date();
+    oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+    
+    const formattedOneYearAgo = oneYearAgo.toISOString().split('T')[0];
+    const formattedOneYearLater = oneYearLater.toISOString().split('T')[0];
+    
+    const statsStartDateInput = document.getElementById('statsStartDate');
+    const statsEndDateInput = document.getElementById('statsEndDate');
+    if (statsStartDateInput) statsStartDateInput.value = formattedOneYearAgo;
+    if (statsEndDateInput) statsEndDateInput.value = formattedOneYearLater;
+    
+    renderStats();
+}
+
 function renderStats() {
     const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
     const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
@@ -1550,6 +2040,7 @@ function renderStats() {
     const startDate = document.getElementById('statsStartDate')?.value || '';
     const endDate = document.getElementById('statsEndDate')?.value || '';
     
+    const today = getToday();
     const courses = getCourses();
     const payments = getPayments();
     const attendance = getAttendance();
@@ -1592,44 +2083,179 @@ function renderStats() {
             }
             return isValid;
         });
+        
+        // 对缴费记录也应用日期过滤
+        if (startDate) {
+            filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+        }
+        if (endDate) {
+            filteredPayments = filteredPayments.filter(p => p.date <= endDate);
+        }
     }
     
-    // 计算已消耗课时（只计算签到记录，不包括请假）
+    // 计算已消耗课时（包括签到记录和扣课时的请假记录）
     let totalUsedHours = 0;
     let totalRemainingHours = 0;
+    let totalMissedHours = 0;
     let totalPaidAmount = 0;
     let totalConsumedAmount = 0;
     
-    // 根据签到记录计算实际已消耗课时
+    // 根据签到记录和扣课时请假记录计算实际已消耗课时
     const filteredCourseIds = filteredCourses.map(c => c.id);
-    const filteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
+    let filteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
     
-    // 统计每个课程的签到次数
+    // 获取扣课时的请假记录
+    const leaveRecords = getLeaveRecords();
+    let filteredLeaveRecords = leaveRecords.filter(l => 
+        filteredCourseIds.includes(l.courseId) && l.deductHours
+    );
+    
+    // 获取所有请假记录（包括扣课时和不扣课时）
+    let filteredMissedLeaveRecords = leaveRecords.filter(l => 
+        filteredCourseIds.includes(l.courseId)
+    );
+    
+    // 应用日期筛选（与明细保持一致）
+    if (startDate) {
+        filteredAttendance = filteredAttendance.filter(a => a.date >= startDate);
+        filteredLeaveRecords = filteredLeaveRecords.filter(l => l.date >= startDate);
+        filteredMissedLeaveRecords = filteredMissedLeaveRecords.filter(l => l.date >= startDate);
+    }
+    if (endDate) {
+        filteredAttendance = filteredAttendance.filter(a => a.date <= endDate);
+        filteredLeaveRecords = filteredLeaveRecords.filter(l => l.date <= endDate);
+        filteredMissedLeaveRecords = filteredMissedLeaveRecords.filter(l => l.date <= endDate);
+    }
+    
+    totalMissedHours = filteredMissedLeaveRecords.length;
+    
+    // 统计每个课程的签到次数和扣课时请假次数
     const courseAttendanceCount = {};
     filteredAttendance.forEach(record => {
         courseAttendanceCount[record.courseId] = (courseAttendanceCount[record.courseId] || 0) + 1;
     });
     
+    // 加上扣课时的请假次数
+    filteredLeaveRecords.forEach(record => {
+        courseAttendanceCount[record.courseId] = (courseAttendanceCount[record.courseId] || 0) + 1;
+    });
+    
+    // 获取已关联课程的缴费记录ID
+    const coursePaymentIds = filteredCourses.map(c => c.paymentId);
+    
+    // 预构建 O(1) 查找结构
+    const paymentMap = {};
+    payments.forEach(p => { paymentMap[p.id] = p; });
+    
+    const attSetByCourse = {};
+    attendance.forEach(a => {
+        if (!attSetByCourse[a.courseId]) attSetByCourse[a.courseId] = new Set();
+        attSetByCourse[a.courseId].add(a.date);
+    });
+    
+    const leaveSetByCourse = {};
+    leaveRecords.forEach(l => {
+        if (!leaveSetByCourse[l.courseId]) leaveSetByCourse[l.courseId] = new Set();
+        leaveSetByCourse[l.courseId].add(l.date);
+    });
+    
+    const coursePaymentIdSet = new Set(coursePaymentIds);
+    
+    // 计算剩余课时的日期边界（受筛选条件影响）
+    const remainingStart = startDate && startDate > today ? startDate : today;
+    const remainingEnd = endDate || '';
+    
     filteredCourses.forEach(course => {
-        // 使用实际签到次数作为已用课时
-        const actualUsedHours = courseAttendanceCount[course.id] || 0;
+        // 使用日期范围内的实际已用课时（与明细保持一致）
+        const actualUsedHours = (courseAttendanceCount[course.id] || 0);
         totalUsedHours += actualUsedHours;
         
-        if (course.totalHours !== Infinity) {
-            totalRemainingHours += (course.totalHours - actualUsedHours);
-        }
+        // 统计剩余课时（与明细一致：未来未签到、未请假的课程数量）
+        if (course.status !== 'active') return;
+        
+        const payment = paymentMap[course.paymentId];
+        if (!payment) return;
+        
+        const remainingHours = (payment.totalHours || 0) - (payment.usedHours || 0);
+        if (remainingHours <= 0) return;
+        
+        const courseEnd = course.endDate || '2999-12-31';
+        if (courseEnd < remainingStart) return;
+        
+        let addedCount = 0;
+        const weekdays = Object.keys(course.schedule);
+        const attSet = attSetByCourse[course.id] || new Set();
+        const lvSet = leaveSetByCourse[course.id] || new Set();
+        
+        weekdays.forEach(day => {
+            let currentDate = new Date(remainingStart);
+            const maxEndDate = new Date();
+            maxEndDate.setFullYear(maxEndDate.getFullYear() + 1);
+            let endTime = Math.min(new Date(courseEnd).getTime(), maxEndDate.getTime());
+            if (remainingEnd) {
+                endTime = Math.min(endTime, new Date(remainingEnd).getTime());
+            }
+            const end = new Date(endTime);
+            
+            const dayIndex = getDayIndex(day);
+            if (dayIndex === -1) return;
+            
+            const targetDayOfWeek = (dayIndex + 1) % 7;
+            while (currentDate.getDay() !== targetDayOfWeek) {
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            while (currentDate <= end && addedCount < remainingHours) {
+                const dateStr = formatDate(currentDate);
+                
+                if (!attSet.has(dateStr) && !lvSet.has(dateStr)) {
+                    totalRemainingHours++;
+                    addedCount++;
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 7);
+            }
+        });
     });
     
     filteredPayments.forEach(payment => {
+        const originalAmount = payment.originalAmount !== undefined ? payment.originalAmount : payment.amount;
+        const originalTotalHours = payment.originalTotalHours !== undefined ? payment.originalTotalHours : payment.totalHours;
+        
+        // 使用当前金额，而不是原始金额
         totalPaidAmount += payment.amount;
-        totalConsumedAmount += payment.amount * (payment.usedHours / payment.totalHours);
+        
+        // 如果缴费记录已关联到课程，跳过重复统计
+        if (!coursePaymentIdSet.has(payment.id)) {
+            // 未关联课程的缴费记录，直接使用记录中的已用课时
+            totalUsedHours += payment.usedHours;
+        }
+        
+        // 计算已消费金额 - 只统计已关联课程的缴费记录（与明细表格一致）
+        if (originalTotalHours > 0) {
+            const relatedCourses = filteredCourses.filter(c => c.paymentId === payment.id);
+            
+            // 只统计已关联课程的缴费记录
+            if (relatedCourses.length > 0) {
+                const unitPrice = originalAmount / originalTotalHours;
+                let courseTotalUsedHours = 0;
+                
+                relatedCourses.forEach(course => {
+                    // 使用日期范围内的已用课时（与明细保持一致）
+                    courseTotalUsedHours += courseAttendanceCount[course.id] || 0;
+                });
+                
+                totalConsumedAmount += courseTotalUsedHours * unitPrice;
+            }
+        }
     });
     
     const statValues = document.querySelectorAll('#statsGrid .stat-value');
     statValues[0].textContent = totalUsedHours;
-    statValues[1].textContent = totalRemainingHours;
-    statValues[2].textContent = totalConsumedAmount.toFixed(0);
-    statValues[3].textContent = totalPaidAmount.toFixed(0);
+    statValues[1].textContent = totalMissedHours;
+    statValues[2].textContent = totalRemainingHours;
+    statValues[3].textContent = totalConsumedAmount.toFixed(0);
+    statValues[4].textContent = totalPaidAmount.toFixed(0);
     
     // 如果明细区域正在显示，同步更新明细表格
     const detailSection = document.getElementById('statsDetailSection');
@@ -1701,7 +2327,8 @@ function renderAttendance() {
     // 显示今日课程
     const todayCourses = courses.filter(course => {
         if (course.status !== 'active') return false;
-        if (!course.schedule[adjustedDay]) return false;
+        const daySchedule = getDaySchedule(course, adjustedDay);
+        if (!daySchedule) return false;
         
         const courseStart = course.startDate;
         const courseEnd = course.endDate || '2999-12-31';
@@ -1715,7 +2342,7 @@ function renderAttendance() {
         html += '<div class="today-section"><h4>🎯 今日课程</h4>';
         
         todayCourses.forEach(course => {
-            const schedule = course.schedule[adjustedDay];
+            const schedule = getDaySchedule(course, adjustedDay);
             const isSigned = attendance.some(a => 
                 a.courseId === course.id && a.date === today
             );
@@ -1733,6 +2360,9 @@ function renderAttendance() {
             const isClassStarted = currentTime >= classStartTime;
             const isClassNotStarted = currentTime < classStartTime;
             
+            // 签到按钮是否可用：课程开始后（包括课程结束后当天）都可用
+            const canSignIn = isClassStarted && !isLeave;
+            
             html += `
                 <div class="attendance-item ${isSigned ? 'signed' : ''} ${isLeave ? 'leave' : ''}">
                     <div class="course-info">
@@ -1743,11 +2373,10 @@ function renderAttendance() {
                         ${isClassOver && !isSigned ? '<div class="class-status missed">⚠️ 已过上课时间</div>' : ''}
                     </div>
                     <div class="attendance-actions">
-                        <button class="attendance-btn ${isSigned ? 'signed' : (isLeave ? 'disabled' : 'available')} ${isClassNotStarted && !isLeave ? 'disabled' : ''}" 
-                            onclick="${isLeave ? '' : (isClassNotStarted && !isLeave ? '' : (isSigned ? `cancelAttendanceToday('${course.id}')` : `showAttendanceModal('${course.id}', '${adjustedDay}')`))}"
-                            ${isLeave || (isClassNotStarted && !isLeave) ? 'disabled' : ''}>
+                        <button class="attendance-btn ${isSigned ? 'signed' : (isLeave || !canSignIn ? 'disabled' : 'available')}" 
+                            onclick="${isLeave ? '' : (!canSignIn && !isSigned ? '' : (isSigned ? `cancelAttendanceToday('${course.id}')` : `showAttendanceModal('${course.id}', '${adjustedDay}')`))}"
+                            ${isLeave || (!canSignIn && !isSigned) ? 'disabled' : ''}>
                             ${isSigned ? '取消签到' : (isLeave ? '已请假' : (isClassNotStarted ? '未到时间' : '签到'))}
-                        </button>
                         <button class="leave-btn ${isLeave ? 'cancel-leave' : (isSigned ? 'disabled' : 'available')}" 
                             onclick="${isSigned ? '' : (isLeave ? `cancelLeave('${course.id}', '${today}')` : `showLeaveModal('${course.id}', '${adjustedDay}')`)}">
                             ${isLeave ? '取消请假' : '请假'}
@@ -1777,6 +2406,19 @@ function getMissedAttendance() {
     const now = new Date();
     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
     
+    // 预构建 O(1) 查找结构
+    const attSetByCourse = {};
+    attendance.forEach(a => {
+        if (!attSetByCourse[a.courseId]) attSetByCourse[a.courseId] = new Set();
+        attSetByCourse[a.courseId].add(a.date);
+    });
+    
+    const leaveSetByCourse = {};
+    leaveRecords.forEach(l => {
+        if (!leaveSetByCourse[l.courseId]) leaveSetByCourse[l.courseId] = new Set();
+        leaveSetByCourse[l.courseId].add(l.date);
+    });
+    
     let missedRecords = [];
     
     courses.forEach(course => {
@@ -1790,6 +2432,8 @@ function getMissedAttendance() {
         
         // 获取课程的所有上课星期
         const weekdays = Object.keys(course.schedule);
+        const attSet = attSetByCourse[course.id] || new Set();
+        const lvSet = leaveSetByCourse[course.id] || new Set();
         
         weekdays.forEach(day => {
             // 计算从课程开始到昨天的所有该星期的日期
@@ -1798,8 +2442,12 @@ function getMissedAttendance() {
             yesterday.setDate(yesterday.getDate() - 1);
             const end = new Date(Math.min(new Date(courseEnd).getTime(), yesterday.getTime()));
             
+            // 获取星期索引（支持数字和中文名称）
+            const dayIndex = getDayIndex(day);
+            if (dayIndex === -1) return;
+            
             // 找到第一个该星期的日期
-            while (currentDate <= end && currentDate.getDay() !== (parseInt(day) + 1) % 7) {
+            while (currentDate <= end && currentDate.getDay() !== (dayIndex + 1) % 7) {
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
@@ -1807,11 +2455,7 @@ function getMissedAttendance() {
             while (currentDate <= end) {
                 const dateStr = formatDate(currentDate);
                 
-                // 检查是否已经签到或请假
-                const isSigned = attendance.some(a => a.courseId === course.id && a.date === dateStr);
-                const isLeave = leaveRecords.some(l => l.courseId === course.id && l.date === dateStr);
-                
-                if (!isSigned && !isLeave) {
+                if (!attSet.has(dateStr) && !lvSet.has(dateStr)) {
                     missedRecords.push({
                         courseId: course.id,
                         date: dateStr,
@@ -1843,7 +2487,8 @@ function showLeaveModalForMissed(courseId, date) {
     for (const day of weekdays) {
         // 检查该日期是否是这个星期的上课日
         const testDate = new Date(date);
-        if (testDate.getDay() === (parseInt(day) + 1) % 7) {
+        const dayIndex = getDayIndex(day);
+        if (dayIndex !== -1 && testDate.getDay() === (dayIndex + 1) % 7) {
             schedule = course.schedule[day];
             break;
         }
@@ -1885,10 +2530,11 @@ function cancelLeave(courseId, date) {
     alert('请假已取消');
 }
 
-// 修改confirmLeave函数以支持历史日期请假
+// 修改confirmLeave函数以支持历史日期请假和课时处理方式选择
 function confirmLeave() {
     const courseId = document.getElementById('leaveCourseId').value;
     const reason = document.getElementById('leaveReason').value.trim();
+    const leaveType = document.querySelector('input[name="leaveType"]:checked')?.value || 'deduct';
     const courses = getCourses();
     const course = courses.find(c => c.id === courseId);
     
@@ -1903,7 +2549,7 @@ function confirmLeave() {
     // 获取课程时间表
     const todayDay = new Date().getDay();
     const adjustedDay = todayDay === 0 ? 6 : todayDay - 1;
-    const schedule = course.schedule[adjustedDay];
+    const schedule = getDaySchedule(course, adjustedDay);
     
     // 判断是否已过上课时间
     const isClassOver = leaveDate < today || (leaveDate === today && currentTime > schedule.endTime);
@@ -1925,23 +2571,40 @@ function confirmLeave() {
         date: leaveDate,
         time: new Date().toLocaleTimeString(),
         reason: reason || '未填写原因',
-        isExtended: isClassOver // 标记是否已过期（需要顺延）
+        isExtended: isClassOver, // 标记是否已过期（需要顺延）
+        deductHours: leaveType === 'deduct' // 标记是否扣课时
     };
     
     leaveRecords.push(newLeaveRecord);
     saveLeaveRecords(leaveRecords);
     
-    // 如果是已过期的请假，自动处理顺延
-    if (isClassOver && leaveDate === today) {
-        // 今日已过上课时间请假，自动顺延到下次课程
-        const nextDate = getNextClassDate(course, today);
-        if (nextDate) {
-            alert(`请假成功！由于已过上课时间，课程已顺延至 ${nextDate}`);
-        } else {
-            alert('请假成功！');
+    // 如果选择扣课时，按签到逻辑计费
+    if (leaveType === 'deduct') {
+        // 更新课程已用课时
+        course.usedHours = (course.usedHours || 0) + 1;
+        saveCourses(courses);
+        
+        // 更新关联缴费记录的已用课时（支持多缴费记录）
+        if (course.paymentId) {
+            const payments = getPayments();
+            deductFromLinkedPayments(course, payments, 1);
+            savePayments(payments);
         }
+        
+        alert('请假成功！已扣除1课时');
     } else {
-        alert('请假成功！');
+        // 不扣课时，按课程顺延逻辑
+        if (isClassOver && leaveDate === today) {
+            // 今日已过上课时间请假，自动顺延到下次课程
+            const nextDate = getNextClassDate(course, today);
+            if (nextDate) {
+                alert(`请假成功！由于已过上课时间，课程已顺延至 ${nextDate}`);
+            } else {
+                alert('请假成功！');
+            }
+        } else {
+            alert('请假成功！课程将顺延');
+        }
     }
     
     closeLeaveModal();
@@ -2013,11 +2676,8 @@ function cancelAttendanceToday(courseId) {
         saveCourses(courses);
         
         if (course.paymentId) {
-            const payment = payments.find(p => p.id === course.paymentId);
-            if (payment) {
-                payment.usedHours = Math.max(0, payment.usedHours - 1);
-                savePayments(payments);
-            }
+            reverseFromLinkedPayments(course, payments, 1);
+            savePayments(payments);
         }
     }
     
@@ -2028,6 +2688,60 @@ function cancelAttendanceToday(courseId) {
     alert('签到已取消');
 }
 
+// ===== 多缴费记录辅助函数 =====
+// 获取课程关联的缴费记录汇总信息
+function getLinkedPaymentsSummary(course, payments) {
+    const paymentIds = course.paymentId ? course.paymentId.split(',').map(id => id.trim()).filter(Boolean) : [];
+    const linked = paymentIds.map(id => payments.find(p => p.id === id)).filter(Boolean);
+    const totalHrs = linked.reduce((sum, p) => sum + p.totalHours, 0);
+    const usedHrs = linked.reduce((sum, p) => sum + p.usedHours, 0);
+    return { linked, totalHrs, usedHrs, remainingHrs: totalHrs - usedHrs };
+}
+
+// 按截止日期优先从多缴费记录中扣课时
+// 返回被扣费的缴费记录，如果没有关联缴费则返回 null
+function deductFromLinkedPayments(course, payments, amount) {
+    amount = amount || 1;
+    const paymentIds = course.paymentId ? course.paymentId.split(',').map(id => id.trim()).filter(Boolean) : [];
+    const linkedPayments = paymentIds.map(id => payments.find(p => p.id === id)).filter(Boolean);
+    
+    if (linkedPayments.length === 0) return null;
+    
+    // 按截止日期排序：最早到期的优先消耗
+    const sorted = [...linkedPayments].sort((a, b) => {
+        if (!a.endDate && !b.endDate) return 0;
+        if (!a.endDate) return 1;   // 无截止日期排最后
+        if (!b.endDate) return -1;
+        return a.endDate.localeCompare(b.endDate);
+    });
+    
+    // 找第一个还有剩余课时的，如果都没了就用第一个（允许负值）
+    const target = sorted.find(p => (p.totalHours - p.usedHours) > 0) || sorted[0];
+    target.usedHours += amount;
+    return target;
+}
+
+// 从多缴费记录中退还课时（撤销签到）
+function reverseFromLinkedPayments(course, payments, amount) {
+    amount = amount || 1;
+    const paymentIds = course.paymentId ? course.paymentId.split(',').map(id => id.trim()).filter(Boolean) : [];
+    const linkedPayments = paymentIds.map(id => payments.find(p => p.id === id)).filter(Boolean);
+    
+    if (linkedPayments.length === 0) return;
+    
+    // 反向优先：从最晚到期且有已用课时的记录退还
+    const sorted = [...linkedPayments].sort((a, b) => {
+        if (!a.endDate && !b.endDate) return 0;
+        if (!a.endDate) return -1;
+        if (!b.endDate) return 1;
+        return b.endDate.localeCompare(a.endDate);
+    });
+    
+    const target = sorted.find(p => p.usedHours > 0) || sorted[0];
+    target.usedHours = Math.max(0, target.usedHours - amount);
+}
+// ===== 多缴费记录辅助函数结束 =====
+
 function showAttendanceModal(courseId, weekday) {
     const courses = getCourses();
     const payments = getPayments();
@@ -2035,16 +2749,22 @@ function showAttendanceModal(courseId, weekday) {
     
     if (!course) return;
     
-    const schedule = course.schedule[parseInt(weekday)];
-    const payment = payments.find(p => p.id === course.paymentId);
+    const schedule = getDaySchedule(course, parseInt(weekday));
+    
+    // 处理多缴费记录关联（使用共享辅助函数）
+    const summary = getLinkedPaymentsSummary(course, payments);
+    
+    let paymentInfo = '不关联';
+    if (summary.linked.length > 0) {
+        const orgs = [...new Set(summary.linked.map(p => p.organization).filter(Boolean))].join('/');
+        paymentInfo = `已上 ${summary.usedHrs} / 总共 ${summary.totalHrs} 课时（剩余 ${summary.remainingHrs}） | ${orgs}`;
+    }
     
     document.getElementById('attendanceCourseId').value = course.id;
     document.getElementById('attendanceCourseName').value = course.courseName;
     document.getElementById('attendanceCourseTime').value = `${schedule.startTime}-${schedule.endTime}`;
     document.getElementById('attendanceCourseLocation').value = course.location || '-';
-    document.getElementById('attendancePaymentInfo').value = payment 
-        ? `${payment.organization} - 剩余${payment.totalHours - payment.usedHours}课时`
-        : '不关联';
+    document.getElementById('attendancePaymentInfo').value = paymentInfo;
     
     document.getElementById('attendanceModal').style.display = 'flex';
 }
@@ -2064,6 +2784,23 @@ function confirmAttendance() {
     const today = getToday();
     const attendance = getAttendance();
     
+    // 多缴费记录：检查剩余课时并扣费
+    const summary = getLinkedPaymentsSummary(course, payments);
+    if (summary.linked.length > 0) {
+        if (summary.remainingHrs <= 0) {
+            const proceed = confirm(
+                `⚠️ 关联缴费课时已用完！\n\n` +
+                `已上 ${summary.usedHrs} / 总共 ${summary.totalHrs} 课时\n` +
+                `超出 ${Math.abs(summary.remainingHrs)} 课时\n\n` +
+                `点击"确定"继续签到（将产生负课时，后续关联新缴费记录后可核销）\n` +
+                `点击"取消"返回`
+            );
+            if (!proceed) return;
+        }
+        deductFromLinkedPayments(course, payments, 1);
+        savePayments(payments);
+    }
+    
     const newAttendance = {
         id: generateId(),
         courseId,
@@ -2075,14 +2812,6 @@ function confirmAttendance() {
     
     attendance.push(newAttendance);
     saveAttendance(attendance);
-    
-    if (course.paymentId) {
-        const payment = payments.find(p => p.id === course.paymentId);
-        if (payment) {
-            payment.usedHours += 1;
-            savePayments(payments);
-        }
-    }
     
     course.usedHours = (course.usedHours || 0) + 1;
     saveCourses(courses);
@@ -2138,6 +2867,7 @@ function renderStatsDetail(type) {
     const payments = getPayments();
     
     let filteredCourses = courses;
+    let filteredPayments = payments;
     
     if (filterStudent) {
         filteredCourses = filteredCourses.filter(c => c.studentName === filterStudent);
@@ -2146,55 +2876,135 @@ function renderStatsDetail(type) {
     if (filterOrg) {
         const orgPayments = payments.filter(p => p.organization === filterOrg).map(p => p.id);
         filteredCourses = filteredCourses.filter(c => orgPayments.includes(c.paymentId));
+        filteredPayments = filteredPayments.filter(p => p.organization === filterOrg);
     }
     
     if (filterCourse) {
         filteredCourses = filteredCourses.filter(c => c.courseName === filterCourse);
     }
     
+    // 日期范围筛选也应用于课程列表（与renderStats保持一致）
+    if (startDate || endDate) {
+        filteredCourses = filteredCourses.filter(course => {
+            const courseStart = course.startDate;
+            const courseEnd = course.endDate || '2999-12-31';
+            
+            let isValid = true;
+            if (startDate && courseEnd < startDate) {
+                isValid = false;
+            }
+            if (endDate && courseStart > endDate) {
+                isValid = false;
+            }
+            return isValid;
+        });
+        
+        if (startDate) {
+            filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+        }
+        if (endDate) {
+            filteredPayments = filteredPayments.filter(p => p.date <= endDate);
+        }
+    }
+    
     if (type === 'used') {
-        // 已消课明细 - 显示签到记录
+        // 已消课明细 - 显示签到记录和扣课时的请假记录
         // 使用已经过滤后的课程列表来获取课程ID
         const filteredCourseIds = filteredCourses.map(c => c.id);
+        
+        // 获取扣课时的请假记录
+        const leaveRecords = getLeaveRecords();
+        let deductLeaveRecords = leaveRecords.filter(l => 
+            filteredCourseIds.includes(l.courseId) && l.deductHours
+        );
         
         let filteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
         
         if (startDate) {
             filteredAttendance = filteredAttendance.filter(a => a.date >= startDate);
+            deductLeaveRecords = deductLeaveRecords.filter(l => l.date >= startDate);
         }
         
         if (endDate) {
             filteredAttendance = filteredAttendance.filter(a => a.date <= endDate);
+            deductLeaveRecords = deductLeaveRecords.filter(l => l.date <= endDate);
         }
         
         document.getElementById('statsDetailTitle').textContent = '已消课明细';
         
-        if (filteredAttendance.length === 0) {
+        // 合并签到记录和扣课时请假记录
+        const allRecords = [
+            ...filteredAttendance.map(a => ({ ...a, type: 'attendance' })),
+            ...deductLeaveRecords.map(l => ({ ...l, type: 'leave' }))
+        ];
+        
+        // 按日期排序
+        allRecords.sort((a, b) => b.date.localeCompare(a.date));
+        
+        if (allRecords.length === 0) {
             document.getElementById('statsDetailContent').innerHTML = '<div class="empty-state"><p>暂无消课记录</p></div>';
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>操作</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>序号</th><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>类型</th><th>操作</th></tr></thead><tbody>';
         const courses = getCourses();
+        let rowIndex = 1;
         
-        filteredAttendance.forEach(record => {
+        allRecords.forEach(record => {
             // 获取上课日期（课程安排的日期）
             const classDate = record.classDate || record.date;
             
-            // 获取上课时间段（课程安排的时间段）
-            const schedule = record.schedule || {};
-            const timeSlot = schedule.startTime && schedule.endTime 
-                ? `${schedule.startTime}-${schedule.endTime}` 
-                : record.time;
+            // 从课程数据中获取上课时间段
+            const course = courses.find(c => c.id === record.courseId);
+            let timeSlot = record.time;
+            
+            if (course) {
+                // 根据日期获取对应的星期安排
+                const dateObj = new Date(classDate);
+                const dayOfWeek = dateObj.getDay();
+                const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+                
+                // 获取课程安排（支持数字索引和中文星期名称）
+                const WEEKDAY_NAMES = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+                let schedule = null;
+                
+                if (course.schedule && course.schedule[adjustedDay]) {
+                    schedule = course.schedule[adjustedDay];
+                } else if (course.schedule && course.schedule[WEEKDAY_NAMES[adjustedDay]]) {
+                    schedule = course.schedule[WEEKDAY_NAMES[adjustedDay]];
+                }
+                
+                if (schedule && schedule.startTime && schedule.endTime) {
+                    timeSlot = `${schedule.startTime}-${schedule.endTime}`;
+                }
+            }
+            
+            // 动态判断是签到还是补签
+            let typeText = '';
+            if (record.type === 'leave') {
+                typeText = '请假(扣课时)';
+            } else {
+                // 判断是否为今天的签到
+                const today = getToday();
+                if (classDate === today) {
+                    // 今天的签到，无论何时签，都显示为"签到"
+                    typeText = '签到';
+                } else {
+                    // 不是今天的签到，显示为"补签"
+                    typeText = '补签';
+                }
+            }
             
             html += `
                 <tr>
+                    <td>${rowIndex++}</td>
                     <td>${classDate}</td>
                     <td>${timeSlot}</td>
                     <td>${record.studentName}</td>
                     <td>${record.courseName}</td>
+                    <td>${typeText}</td>
                     <td>
-                        <button class="btn btn-warning btn-sm" onclick="cancelAttendanceRecord('${record.id}')">取消签到</button>
+                        ${record.type === 'attendance' ? `<button class="btn btn-warning btn-sm" onclick="cancelAttendanceRecord('${record.id}')">取消签到</button>` : `<button class="btn btn-warning btn-sm" onclick="cancelLeaveRecord('${record.id}')">取消请假</button>`}
                     </td>
                 </tr>
             `;
@@ -2203,51 +3013,96 @@ function renderStatsDetail(type) {
         html += '</tbody></table>';
         document.getElementById('statsDetailContent').innerHTML = html;
     } else if (type === 'remaining') {
-        // 未消课明细 - 显示应该上课但未签到的记录
+        // 剩余课时明细 - 显示还没有上的课程
         const today = getToday();
-        const now = new Date();
-        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-        let missedClasses = [];
+        const startDate = document.getElementById('statsStartDate')?.value || '';
+        const endDate = document.getElementById('statsEndDate')?.value || '';
+        const remainingStart = startDate && startDate > today ? startDate : today;
+        const remainingEnd = endDate || '';
+        
+        document.getElementById('statsDetailTitle').textContent = '剩余课时明细';
+        
+        let futureClasses = [];
         const leaveRecords = getLeaveRecords();
+        
+        // 预构建 O(1) 查找结构
+        const paymentMap = {};
+        payments.forEach(p => { paymentMap[p.id] = p; });
+        
+        const attSetByCourse = {};
+        attendance.forEach(a => {
+            if (!attSetByCourse[a.courseId]) attSetByCourse[a.courseId] = new Set();
+            attSetByCourse[a.courseId].add(a.date);
+        });
+        
+        const leaveSetByCourse = {};
+        leaveRecords.forEach(l => {
+            if (!leaveSetByCourse[l.courseId]) leaveSetByCourse[l.courseId] = new Set();
+            leaveSetByCourse[l.courseId].add(l.date);
+        });
         
         filteredCourses.forEach(course => {
             if (course.status !== 'active') return;
             
+            // 获取课程关联的缴费记录
+            const payment = paymentMap[course.paymentId];
+            if (!payment) return;
+            
+            // 计算剩余课时 = 总课时 - 已用课时
+            const remainingHours = (payment.totalHours || 0) - (payment.usedHours || 0);
+            if (remainingHours <= 0) return;
+            
             const courseStart = course.startDate;
             const courseEnd = course.endDate || '2999-12-31';
             
-            if (courseStart > today || courseEnd < today) return;
+            // 只显示未来的课程（在筛选范围内）
+            if (courseEnd < remainingStart) return;
+            
+            // 当前课程已添加的未来课程数量
+            let addedCount = 0;
             
             // 遍历课程的所有上课日期
             const weekdays = Object.keys(course.schedule);
+            const attSet = attSetByCourse[course.id] || new Set();
+            const lvSet = leaveSetByCourse[course.id] || new Set();
+            
             weekdays.forEach(day => {
-                // 计算从课程开始到今天（或结束日期）的所有该星期的日期
-                let currentDate = new Date(courseStart);
-                const end = new Date(Math.min(new Date(courseEnd).getTime(), new Date(today).getTime()));
+                // 计算从remainingStart到课程结束日期的所有该星期的日期
+                let currentDate = new Date(remainingStart);
+                // 限制最大遍历日期为1年后，避免无限循环
+                const maxEndDate = new Date();
+                maxEndDate.setFullYear(maxEndDate.getFullYear() + 1);
+                let endTime = Math.min(new Date(courseEnd).getTime(), maxEndDate.getTime());
+                if (remainingEnd) {
+                    endTime = Math.min(endTime, new Date(remainingEnd).getTime());
+                }
+                const end = new Date(endTime);
                 
-                // 找到第一个该星期的日期
-                while (currentDate.getDay() !== (parseInt(day) + 1) % 7) {
+                // 获取星期索引（支持数字和中文名称）
+                const dayIndex = getDayIndex(day);
+                if (dayIndex === -1) return;
+                
+                // 找到第一个该星期的日期（今天或以后）
+                // getDay() 返回 0-6（周日到周六），WEEKDAY_NAMES[0] 是周一
+                // 所以周一对应 getDay() = 1，需要转换
+                const targetDayOfWeek = (dayIndex + 1) % 7;
+                while (currentDate.getDay() !== targetDayOfWeek) {
                     currentDate.setDate(currentDate.getDate() + 1);
                 }
                 
-                // 遍历所有该星期的日期
-                while (currentDate <= end) {
+                // 遍历所有该星期的日期（在筛选范围内）
+                while (currentDate <= end && addedCount < remainingHours) {
                     const dateStr = formatDate(currentDate);
                     
-                    // 检查是否已经签到
-                    const isSigned = attendance.some(a => a.courseId === course.id && a.date === dateStr);
-                    
-                    // 检查是否已经请假
-                    const isLeave = leaveRecords.some(l => l.courseId === course.id && l.date === dateStr);
-                    
-                    if (!isSigned && !isLeave) {
-                        missedClasses.push({
+                    if (!attSet.has(dateStr) && !lvSet.has(dateStr)) {
+                        futureClasses.push({
                             courseId: course.id,
                             studentName: course.studentName,
                             courseName: course.courseName,
                             date: dateStr,
                             schedule: course.schedule[day]
                         });
+                        addedCount++;
                     }
                     
                     currentDate.setDate(currentDate.getDate() + 7);
@@ -2255,77 +3110,114 @@ function renderStatsDetail(type) {
             });
         });
         
-        // 按学生姓名、课程名称、日期、上课时间排序
-        missedClasses.sort((a, b) => {
-            // 按学生姓名排序
-            const nameCompare = a.studentName.localeCompare(b.studentName, 'zh-CN');
-            if (nameCompare !== 0) return nameCompare;
-            
-            // 按课程名称排序
-            const courseCompare = a.courseName.localeCompare(b.courseName, 'zh-CN');
-            if (courseCompare !== 0) return courseCompare;
-            
-            // 按日期排序
+        // 按日期、上课时间、学生姓名、课程名称排序
+        futureClasses.sort((a, b) => {
             const dateCompare = a.date.localeCompare(b.date);
             if (dateCompare !== 0) return dateCompare;
             
-            // 按上课时间排序
             const timeA = a.schedule?.startTime || '';
             const timeB = b.schedule?.startTime || '';
-            return timeA.localeCompare(timeB);
+            const timeCompare = timeA.localeCompare(timeB);
+            if (timeCompare !== 0) return timeCompare;
+            
+            const nameCompare = a.studentName.localeCompare(b.studentName, 'zh-CN');
+            if (nameCompare !== 0) return nameCompare;
+            
+            return a.courseName.localeCompare(b.courseName, 'zh-CN');
         });
         
-        document.getElementById('statsDetailTitle').textContent = '未消课明细';
-        
-        if (missedClasses.length === 0) {
-            document.getElementById('statsDetailContent').innerHTML = '<div class="empty-state"><p>暂无未消课记录</p></div>';
+        if (futureClasses.length === 0) {
+            document.getElementById('statsDetailContent').innerHTML = '<div class="empty-state"><p>暂无未上课的课程</p></div>';
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>序号</th><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th></tr></thead><tbody>';
+        let rowIndex = 1;
         
-        missedClasses.forEach(record => {
-            const isPastDate = record.date < today;
-            const isToday = record.date === today;
-            const isBeforeClass = isToday && currentTime < record.schedule.startTime;
-            const isClassOver = isToday && currentTime > record.schedule.endTime;
-            
-            let statusText = '';
-            let statusClass = '';
-            
-            if (isPastDate || isClassOver) {
-                statusText = '已过期';
-                statusClass = 'status-expired';
-            } else if (isBeforeClass) {
-                statusText = '待签到';
-                statusClass = 'status-pending';
-            }
-            
-            let actionButtons = '';
-            
-            if (isPastDate || isClassOver) {
-                actionButtons = `
-                    <button class="btn btn-success btn-sm" onclick="addManualAttendance('${record.courseId}', '${record.date}')">补签</button>
-                    <button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>
-                `;
-            } else if (isBeforeClass) {
-                actionButtons = `<button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>`;
-            } else {
-                actionButtons = `
-                    <button class="btn btn-success btn-sm" onclick="addManualAttendance('${record.courseId}', '${record.date}')">签到</button>
-                    <button class="btn btn-info btn-sm" onclick="showLeaveModalForMissed('${record.courseId}', '${record.date}')">请假</button>
-                `;
-            }
+        futureClasses.forEach(record => {
+            const startTime = record.schedule?.startTime || '-';
+            const endTime = record.schedule?.endTime || '-';
             
             html += `
                 <tr>
+                    <td>${rowIndex++}</td>
                     <td>${record.date}</td>
-                    <td>${record.schedule.startTime}-${record.schedule.endTime}</td>
+                    <td>${startTime}-${endTime}</td>
                     <td>${record.studentName}</td>
                     <td>${record.courseName}</td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        document.getElementById('statsDetailContent').innerHTML = html;
+    } else if (type === 'missed') {
+        // 请假记录明细 - 显示所有请假记录（包括扣课时和不扣课时）
+        document.getElementById('statsDetailTitle').textContent = '请假记录明细';
+        
+        const leaveRecords = getLeaveRecords();
+        const filteredCourseIds = filteredCourses.map(c => c.id);
+        
+        // 获取所有请假记录（包括扣课时和不扣课时）
+        let allLeaveRecords = leaveRecords.filter(l => 
+            filteredCourseIds.includes(l.courseId)
+        );
+        
+        // 应用日期筛选
+        if (startDate) {
+            allLeaveRecords = allLeaveRecords.filter(l => l.date >= startDate);
+        }
+        if (endDate) {
+            allLeaveRecords = allLeaveRecords.filter(l => l.date <= endDate);
+        }
+        
+        // 为请假记录添加课程信息
+        const leaveWithCourseInfo = allLeaveRecords.map(leave => {
+            const course = filteredCourses.find(c => c.id === leave.courseId);
+            if (!course) return null;
+            
+            // 获取该日期对应的时间表
+            const leaveDateObj = new Date(leave.date);
+            const dayOfWeek = leaveDateObj.getDay();
+            const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const schedule = course.schedule[adjustedDay];
+            
+            return {
+                ...leave,
+                studentName: course.studentName,
+                courseName: course.courseName,
+                schedule: schedule || {}
+            };
+        }).filter(Boolean);
+        
+        // 按日期排序
+        leaveWithCourseInfo.sort((a, b) => a.date.localeCompare(b.date));
+        
+        if (leaveWithCourseInfo.length === 0) {
+            document.getElementById('statsDetailContent').innerHTML = '<div class="empty-state"><p>暂无请假记录</p></div>';
+            return;
+        }
+        
+        let html = '<table class="detail-table"><thead><tr><th>序号</th><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+        let rowIndex = 1;
+        
+        leaveWithCourseInfo.forEach(record => {
+            const timeSlot = record.schedule.startTime && record.schedule.endTime 
+                ? `${record.schedule.startTime}-${record.schedule.endTime}` 
+                : '-';
+            
+            const statusText = record.deductHours ? '请假(扣课时)' : '请假(不扣课时)';
+            
+            html += `
+                <tr>
+                    <td>${rowIndex++}</td>
+                    <td>${record.date}</td>
+                    <td>${timeSlot}</td>
+                    <td>${record.studentName}</td>
+                    <td>${record.courseName}</td>
+                    <td>${statusText}</td>
                     <td>
-                        ${actionButtons}
+                        <button class="btn btn-warning btn-sm" onclick="cancelLeaveRecord('${record.id}')">取消请假</button>
                     </td>
                 </tr>
             `;
@@ -2337,85 +3229,152 @@ function renderStatsDetail(type) {
         // 已消费金额明细 - 按课程显示已消耗金额
         document.getElementById('statsDetailTitle').textContent = '已消费金额明细';
         
+        // 预构建 paymentId → org 的映射（避免 sort 中的 O(n) find）
+        const paymentOrgMap = {};
+        const paymentMap = {};
+        payments.forEach(p => {
+            paymentOrgMap[p.id] = p.organization || '';
+            paymentMap[p.id] = p;
+        });
+        
         // 按学生名称 → 机构名称 → 课程名称排序
         filteredCourses.sort((a, b) => {
             if (a.studentName !== b.studentName) {
                 return a.studentName.localeCompare(b.studentName);
             }
-            const orgA = payments.find(p => p.id === a.paymentId)?.organization || '';
-            const orgB = payments.find(p => p.id === b.paymentId)?.organization || '';
+            const orgA = paymentOrgMap[a.paymentId] || '';
+            const orgB = paymentOrgMap[b.paymentId] || '';
             if (orgA !== orgB) {
                 return orgA.localeCompare(orgB);
             }
             return a.courseName.localeCompare(b.courseName);
         });
         
-        let html = '<table class="detail-table"><thead><tr><th>学生姓名</th><th>机构名称</th><th>课程名称</th><th>已用课时</th><th>课时单价</th><th>已消费金额（元）</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>序号</th><th>学生姓名</th><th>机构名称</th><th>课程名称</th><th>已用课时</th><th>课时单价</th><th>已消费金额（元）</th></tr></thead><tbody>';
         let totalConsumed = 0;
+        let totalUsedHours = 0;
+        let rowIndex = 1;
+        
+        // 获取日期范围内的签到和扣课时请假记录，用于计算日期筛选后的已用课时
+        const leaveRecords = getLeaveRecords();
+        const filteredCourseIds = filteredCourses.map(c => c.id);
+        let dateFilteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
+        let dateFilteredLeave = leaveRecords.filter(l => filteredCourseIds.includes(l.courseId) && l.deductHours);
+        
+        if (startDate) {
+            dateFilteredAttendance = dateFilteredAttendance.filter(a => a.date >= startDate);
+            dateFilteredLeave = dateFilteredLeave.filter(l => l.date >= startDate);
+        }
+        if (endDate) {
+            dateFilteredAttendance = dateFilteredAttendance.filter(a => a.date <= endDate);
+            dateFilteredLeave = dateFilteredLeave.filter(l => l.date <= endDate);
+        }
+        
+        // 预统计每个课程的消课次数
+        const courseCountMap = {};
+        dateFilteredAttendance.forEach(a => {
+            courseCountMap[a.courseId] = (courseCountMap[a.courseId] || 0) + 1;
+        });
+        dateFilteredLeave.forEach(l => {
+            courseCountMap[l.courseId] = (courseCountMap[l.courseId] || 0) + 1;
+        });
         
         filteredCourses.forEach(course => {
             if (course.paymentId) {
-                const payment = payments.find(p => p.id === course.paymentId);
+                const payment = paymentMap[course.paymentId];
                 if (payment && payment.originalAmount && payment.originalTotalHours > 0) {
                     const unitPrice = payment.originalAmount / payment.originalTotalHours;
-                    const consumed = (course.usedHours || 0) * unitPrice;
-                    totalConsumed += consumed;
                     
-                    html += `
-                        <tr>
-                            <td>${course.studentName}</td>
-                            <td>${payment.organization || '-'}</td>
-                            <td>${course.courseName}</td>
-                            <td>${course.usedHours || 0}</td>
-                            <td>¥${unitPrice.toFixed(2)}</td>
-                            <td>¥${consumed.toFixed(2)}</td>
-                        </tr>
-                    `;
+                    // 计算日期范围内的已用课时
+                    const usedHoursInRange = courseCountMap[course.id] || 0;
+                    const consumed = usedHoursInRange * unitPrice;
+                    
+                    // 只显示已消费金额大于0的记录
+                    if (consumed > 0) {
+                        totalConsumed += consumed;
+                        totalUsedHours += usedHoursInRange;
+                        
+                        html += `
+                            <tr>
+                                <td>${rowIndex++}</td>
+                                <td>${course.studentName}</td>
+                                <td>${payment.organization || '-'}</td>
+                                <td>${course.courseName}</td>
+                                <td>${usedHoursInRange}</td>
+                                <td>¥${unitPrice.toFixed(2)}</td>
+                                <td>¥${consumed.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }
                 }
             }
         });
         
-        html += `<tr><td colspan="5" style="text-align:right"><strong>合计</strong></td><td><strong>¥${totalConsumed.toFixed(2)}</strong></td></tr>`;
+        html += `<tr><td colspan="4" style="text-align:right"><strong>合计</strong></td><td><strong>${totalUsedHours}</strong></td><td></td><td><strong>¥${totalConsumed.toFixed(2)}</strong></td></tr>`;
         html += '</tbody></table>';
         document.getElementById('statsDetailContent').innerHTML = html;
     } else if (type === 'totalAmount') {
         // 总缴费金额明细 - 显示所有缴费记录
-        let filteredPayments = payments;
+        
+        // 创建一个新的过滤后的缴费记录副本，避免影响其他类型
+        let totalFilteredPayments = payments;
+        
+        // 应用学生过滤
+        if (filterStudent) {
+            totalFilteredPayments = totalFilteredPayments.filter(p => {
+                return filteredCourses.some(c => c.paymentId === p.id);
+            });
+        }
+        
+        // 应用机构过滤
+        if (filterOrg) {
+            totalFilteredPayments = totalFilteredPayments.filter(p => p.organization === filterOrg);
+        }
         
         if (startDate) {
-            filteredPayments = filteredPayments.filter(p => p.date >= startDate);
+            totalFilteredPayments = totalFilteredPayments.filter(p => p.date >= startDate);
         }
         
         if (endDate) {
-            filteredPayments = filteredPayments.filter(p => p.date <= endDate);
+            totalFilteredPayments = totalFilteredPayments.filter(p => p.date <= endDate);
         }
         
         document.getElementById('statsDetailTitle').textContent = '总缴费金额明细';
         
-        if (filteredPayments.length === 0) {
+        if (totalFilteredPayments.length === 0) {
             document.getElementById('statsDetailContent').innerHTML = '<div class="empty-state"><p>暂无缴费记录</p></div>';
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>缴费日期</th><th>机构名称</th><th>课包总价（元）</th><th>课包课时</th><th>金额（元）</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>序号</th><th>缴费日期</th><th>机构名称</th><th>课包总价（元）</th><th>课包课时</th><th>金额（元）</th><th>课时</th></tr></thead><tbody>';
         let totalAmount = 0;
+        let totalOriginalAmount = 0;
+        let totalOriginalHours = 0;
+        let totalHours = 0;
+        let rowIndex = 1;
         
-        filteredPayments.forEach(payment => {
+        totalFilteredPayments.forEach(payment => {
             const originalAmount = payment.originalAmount !== undefined ? payment.originalAmount : payment.amount;
-            totalAmount += originalAmount;
+            const originalTotalHours = payment.originalTotalHours !== undefined ? payment.originalTotalHours : payment.totalHours;
+            totalAmount += payment.amount;
+            totalOriginalAmount += originalAmount;
+            totalOriginalHours += originalTotalHours;
+            totalHours += payment.totalHours;
             
             html += `
                 <tr>
+                    <td>${rowIndex++}</td>
                     <td>${payment.date}</td>
                     <td>${payment.organization || '-'}</td>
                     <td>¥${originalAmount.toFixed(2)}</td>
-                    <td>${payment.originalTotalHours || payment.totalHours}</td>
+                    <td>${originalTotalHours}</td>
                     <td>¥${payment.amount.toFixed(2)}</td>
+                    <td>${payment.totalHours}</td>
                 </tr>
             `;
         });
         
-        html += `<tr><td colspan="4" style="text-align:right"><strong>合计</strong></td><td><strong>¥${totalAmount.toFixed(2)}</strong></td></tr>`;
+        html += `<tr><td colspan="3" style="text-align:right"><strong>合计</strong></td><td><strong>¥${totalOriginalAmount.toFixed(2)}</strong></td><td><strong>${totalOriginalHours}</strong></td><td><strong>¥${totalAmount.toFixed(2)}</strong></td><td><strong>${totalHours}</strong></td></tr>`;
         html += '</tbody></table>';
         document.getElementById('statsDetailContent').innerHTML = html;
     }
@@ -2461,6 +3420,49 @@ function cancelAttendanceRecord(attendanceId) {
     alert('签到已取消，该课程已回到未签到列表');
 }
 
+// 取消扣课时的请假记录
+function cancelLeaveRecord(leaveId) {
+    if (!confirm('确定要取消这次请假吗？如果是扣课时的请假，课时将被恢复。')) {
+        return;
+    }
+    
+    const leaveRecords = getLeaveRecords();
+    const record = leaveRecords.find(l => l.id === leaveId);
+    
+    if (!record) return;
+    
+    // 如果是扣课时的请假，恢复课程和缴费的已用课时
+    if (record.deductHours) {
+        const courses = getCourses();
+        const payments = getPayments();
+        
+        const course = courses.find(c => c.id === record.courseId);
+        if (course) {
+            course.usedHours = Math.max(0, (course.usedHours || 0) - 1);
+            saveCourses(courses);
+            
+            if (course.paymentId) {
+                const payment = payments.find(p => p.id === course.paymentId);
+                if (payment) {
+                    payment.usedHours = Math.max(0, payment.usedHours - 1);
+                    savePayments(payments);
+                }
+            }
+        }
+    }
+    
+    // 删除请假记录
+    const newLeaveRecords = leaveRecords.filter(l => l.id !== leaveId);
+    saveLeaveRecords(newLeaveRecords);
+    
+    // 重新渲染明细和统计
+    const type = document.getElementById('statsDetailType').value;
+    renderStatsDetail(type);
+    renderStats();
+    
+    alert('请假已取消');
+}
+
 function addManualAttendance(courseId, date) {
     const courses = getCourses();
     const payments = getPayments();
@@ -2477,13 +3479,56 @@ function addManualAttendance(courseId, date) {
         return;
     }
     
+    // 多缴费记录：检查剩余课时并扣费
+    const summary = getLinkedPaymentsSummary(course, payments);
+    if (summary.linked.length > 0) {
+        if (summary.remainingHrs <= 0) {
+            const proceed = confirm(
+                `⚠️ 关联缴费课时已用完！\n\n` +
+                `已上 ${summary.usedHrs} / 总共 ${summary.totalHrs} 课时\n` +
+                `超出 ${Math.abs(summary.remainingHrs)} 课时\n\n` +
+                `点击"确定"继续补签（将产生负课时，后续关联新缴费记录后可核销）\n` +
+                `点击"取消"返回`
+            );
+            if (!proceed) return;
+        }
+        deductFromLinkedPayments(course, payments, 1);
+        savePayments(payments);
+    }
+    
+    // 判断是签到还是补签
+    const today = getToday();
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    let attendanceType = '签到';
+    
+    // 如果是今天签到，且在上课时间内，算作签到
+    if (date === today) {
+        // 获取课程当天的上课时间安排
+        const todayDay = now.getDay();
+        const adjustedDay = todayDay === 0 ? 6 : todayDay - 1;
+        const schedule = getDaySchedule(course, adjustedDay);
+        
+        if (schedule && schedule.startTime && schedule.endTime) {
+            if (currentTime < schedule.startTime || currentTime > schedule.endTime) {
+                attendanceType = '补签';
+            }
+        } else {
+            attendanceType = '补签';
+        }
+    } else {
+        // 不是今天签到，算作补签
+        attendanceType = '补签';
+    }
+    
     const newAttendance = {
         id: generateId(),
         courseId,
         studentName: course.studentName,
         courseName: course.courseName,
         date: date,
-        time: '补签'
+        time: attendanceType
     };
     
     attendance.push(newAttendance);
@@ -2492,14 +3537,6 @@ function addManualAttendance(courseId, date) {
     // 更新课程和缴费的已用课时
     course.usedHours = (course.usedHours || 0) + 1;
     saveCourses(courses);
-    
-    if (course.paymentId) {
-        const payment = payments.find(p => p.id === course.paymentId);
-        if (payment) {
-            payment.usedHours += 1;
-            savePayments(payments);
-        }
-    }
     
     // 重新渲染明细、统计和签到页面
     const type = document.getElementById('statsDetailType').value;
@@ -2577,6 +3614,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // 页面初始化
 function init() {
     initData();
+    fixIncorrectUsedHours();  // 每次加载都检查并修复数据
     renderStudentSelector();
     updatePaymentFilters();
     renderPaymentTable();
@@ -2589,9 +3627,11 @@ function init() {
     document.getElementById('endDate').value = '2999-12-31';
     
     const today = new Date();
-    const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+    const oneYearAgo = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+    const oneYearLater = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
     const formattedToday = getToday();
-    const formattedThreeMonthsAgo = formatDate(threeMonthsAgo);
+    const formattedOneYearAgo = formatDate(oneYearAgo);
+    const formattedOneYearLater = formatDate(oneYearLater);
     
     // 设置课表日期范围为本周
     const scheduleStartDateInput = document.getElementById('scheduleStartDate');
@@ -2601,13 +3641,13 @@ function init() {
     
     const detailStartDateInput = document.getElementById('detailStartDate');
     const detailEndDateInput = document.getElementById('detailEndDate');
-    if (detailStartDateInput) detailStartDateInput.value = formattedThreeMonthsAgo;
-    if (detailEndDateInput) detailEndDateInput.value = formattedToday;
+    if (detailStartDateInput) detailStartDateInput.value = formattedOneYearAgo;
+    if (detailEndDateInput) detailEndDateInput.value = formattedOneYearLater;
     
     const statsStartDateInput = document.getElementById('statsStartDate');
     const statsEndDateInput = document.getElementById('statsEndDate');
-    if (statsStartDateInput) statsStartDateInput.value = formattedThreeMonthsAgo;
-    if (statsEndDateInput) statsEndDateInput.value = formattedToday;
+    if (statsStartDateInput) statsStartDateInput.value = formattedOneYearAgo;
+    if (statsEndDateInput) statsEndDateInput.value = formattedOneYearLater;
     
     const students = getStudents();
     if (students.length > 0) {
@@ -2623,9 +3663,33 @@ function init() {
     renderAttendance();
 }
 
+// 修复错误的已用课时数据
+function fixIncorrectUsedHours() {
+    const payments = getPayments();
+    const courses = getCourses();
+    
+    // 找出所有已用课时 > 0 但没有关联课程或关联课程已用课时为0的缴费记录
+    payments.forEach(payment => {
+        if (payment.usedHours > 0) {
+            // 查找关联的课程
+            const relatedCourses = courses.filter(c => c.paymentId === payment.id);
+            const totalUsedByCourses = relatedCourses.reduce((sum, c) => sum + (c.usedHours || 0), 0);
+            
+            // 如果缴费记录的已用课时和课程的已用课时不匹配，修正为课程的已用课时总和
+            if (payment.usedHours !== totalUsedByCourses) {
+                payment.usedHours = totalUsedByCourses;
+                console.log(`修正缴费记录 ${payment.id} 的已用课时: ${payment.usedHours}`);
+            }
+        }
+    });
+    
+    savePayments(payments);
+    console.log('已修复错误的已用课时数据');
+}
+
 // 初始化数据
 function initData() {
-    const dataVersion = 'v9';
+    const dataVersion = 'v11';
     const currentVersion = localStorage.getItem('dataVersion');
     
     // 如果是第一次使用或数据版本不同，进行增量更新

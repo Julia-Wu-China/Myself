@@ -194,6 +194,10 @@ header h1 {
     margin-bottom: 15px;
 }
 
+.form-row.full-width {
+    grid-template-columns: 1fr;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -233,20 +237,22 @@ header h1 {
 .checkbox-group {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
 }
 
 .checkbox-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 8px 12px;
+    gap: 4px;
+    padding: 10px 5px;
     background: #f8f9fa;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.3s;
     width: 100%;
+    min-width: 0;
 }
 
 .checkbox-item input[type="checkbox"] {
@@ -450,15 +456,21 @@ header h1 {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 .schedule-table th,
 .schedule-table td {
     border: 1px solid #e0e0e0;
-    padding: 8px;
+    padding: 0;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
+    box-sizing: border-box;
+    height: 30px;
+    max-height: 30px;
+    overflow: hidden;
+    position: relative;
 }
 
 .schedule-table th {
@@ -471,28 +483,45 @@ header h1 {
     background: #fff3e0;
     font-weight: 500;
     min-width: 80px;
-    padding: 0 !important;
+    padding: 0 6px;
+    height: 30px;
+    line-height: 30px;
+    box-sizing: border-box;
+    vertical-align: middle;
+}
+.schedule-table tbody tr {
+    height: 30px;
+    min-height: 30px;
+    max-height: 30px;
 }
 
 .schedule-table .class-cell {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 6px;
     padding: 8px;
     cursor: pointer;
-    transition: transform 0.2s;
-    width: 100%;
-    height: 100%;
+    transition: transform 0.2s, font-size 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
     box-sizing: border-box;
+    letter-spacing: 1px;
+    font-size: 8px;
+    min-height: 56px;
 }
 
 .schedule-table .class-cell:hover {
-    transform: scale(1.02);
+    transform: scale(1.8);
+    font-size: 9px;
+    z-index: 10;
+    position: relative;
 }
 
 .schedule-table .class-cell-stack {
@@ -530,12 +559,12 @@ header h1 {
 }
 
 .schedule-table .class-cell-multi {
-    display: flex;
-    gap: 4px;
-    padding: 2px;
-    align-items: flex-start;
-    position: relative;
-    min-height: 100px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 4px 2px 2px 2px;
+    box-sizing: border-box;
 }
 
 .schedule-table .class-cell-multi-container {
@@ -548,14 +577,16 @@ header h1 {
 }
 
 .schedule-table .class-cell-item {
+    position: absolute;
     color: white;
     border-radius: 6px;
     padding: 4px;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: transform 0.2s, font-size 0.2s;
     font-size: 8px;
     line-height: 1.2;
     min-width: 0;
+    min-height: 56px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -566,7 +597,10 @@ header h1 {
 }
 
 .schedule-table .class-cell-item:hover {
-    transform: scale(1.02);
+    transform: scale(1.8);
+    font-size: 9px;
+    z-index: 10;
+    position: relative;
 }
 
 .course-card {
@@ -682,6 +716,10 @@ header h1 {
     background: linear-gradient(135deg, #ef9a9a 0%, #e57373 100%);
 }
 
+.stat-card.blue {
+    background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
+}
+
 .stat-value {
     font-size: 32px;
     font-weight: 700;
@@ -792,6 +830,11 @@ header h1 {
 .status-badge.status-leave {
     background: #fff3e0;
     color: #e65100;
+}
+
+.status-badge.status-leave-deduct {
+    background: #ffebee;
+    color: #c62828;
 }
 
 .attendance-btn {
@@ -1153,25 +1196,36 @@ header h1 {
         overflow-x: auto;
         margin: 0 -15px;
         padding: 0 15px;
+        -webkit-overflow-scrolling: touch;
     }
     
     .schedule-table {
         font-size: 12px;
-        min-width: 600px;
+        min-width: 100%;
+        width: max-content;
     }
     
     .schedule-table th,
     .schedule-table td {
         padding: 6px 4px;
+        white-space: normal;
+        word-break: break-word;
     }
     
     .schedule-table .time-slot {
-        min-width: 70px;
+        min-width: 60px;
     }
     
-    .schedule-table .class-cell {
+    .schedule-table .class-cell,
+    .schedule-table .class-cell-item {
         padding: 4px;
-        font-size: 11px;
+        font-size: 10px;
+        word-break: break-word;
+        line-height: 1.1;
+    }
+    
+    .schedule-table .class-cell:hover {
+        transform: none;
     }
     
     .course-card {
@@ -1293,12 +1347,22 @@ header h1 {
         grid-template-columns: 1fr;
     }
     
-    .schedule-table {
-        min-width: 500px;
+    .schedule-container {
+        padding: 0 10px;
+        margin: 0 -10px;
     }
     
-    .schedule-table .class-cell {
-        font-size: 10px;
+    .schedule-table {
+        min-width: 420px;
+    }
+    
+    .schedule-table .time-slot {
+        min-width: 55px;
+    }
+    
+    .schedule-table .class-cell,
+    .schedule-table .class-cell-item {
+        font-size: 9px;
         padding: 3px;
     }
     
@@ -1391,4 +1455,128 @@ header h1 {
     .payment-table .actions {
         flex-direction: column;
     }
+}
+
+/* 多选组件样式 */
+.multi-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.multi-select-header {
+    padding: 10px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    transition: all 0.3s;
+}
+
+.multi-select-header:hover {
+    border-color: #667eea;
+}
+
+.multi-select-header .arrow {
+    font-size: 12px;
+    color: #666;
+    transition: transform 0.3s;
+}
+
+.multi-select-header.open .arrow {
+    transform: rotate(180deg);
+}
+
+.multi-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 5px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+    z-index: 100;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.search-box {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.select-all {
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+#paymentOptionsList, #editPaymentOptionsList {
+    padding: 5px;
+}
+
+#paymentOptionsList label, #editPaymentOptionsList label {
+    display: block;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 6px;
+    margin-bottom: 2px;
+}
+
+#paymentOptionsList label:hover, #editPaymentOptionsList label:hover {
+    background: #f5f5f5;
+}
+
+#paymentOptionsList input[type="checkbox"], #editPaymentOptionsList input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.1);
+}
+
+.selected-items {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.selected-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    background: #e3f2fd;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #1976d2;
+}
+
+.selected-item .remove-btn {
+    margin-left: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #90caf9;
+    transition: color 0.3s;
+}
+
+.selected-item .remove-btn:hover {
+    color: #1976d2;
 }
