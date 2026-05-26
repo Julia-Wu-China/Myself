@@ -13,13 +13,15 @@
         </div>
     </header>
 
-    <div class="nav-tabs" id="navTabs">
-        <div class="nav-tab" data-tab="attendance">今日签到</div>
-        <div class="nav-tab" data-tab="schedule">全员课表</div>
-        <div class="nav-tab" data-tab="detail">学生详情</div>
-        <div class="nav-tab" data-tab="stats">课时统计</div>
-        <div class="nav-tab active" data-tab="student">缴费记录</div>
-        <div class="nav-tab" data-tab="course">课程录入</div>
+    <div class="container">
+        <div class="nav-tabs" id="navTabs">
+            <div class="nav-tab" data-tab="attendance">今日签到</div>
+            <div class="nav-tab" data-tab="schedule">全员课表</div>
+            <div class="nav-tab" data-tab="detail">学生详情</div>
+            <div class="nav-tab" data-tab="stats">课时统计</div>
+            <div class="nav-tab active" data-tab="student">缴费记录</div>
+            <div class="nav-tab" data-tab="course">课程录入</div>
+        </div>
     </div>
 
     <div class="container">
@@ -55,6 +57,7 @@
                         <th>已用课时</th>
                         <th>剩余课时</th>
                         <th>截止日期</th>
+                        <th>备注</th>
                         <th>状态</th>
                         <th>操作</th>
                     </tr>
@@ -319,24 +322,24 @@
                         <input type="date" id="paymentDate" required>
                     </div>
                     <div class="form-group">
-                        <label>机构名称</label>
-                        <input type="text" id="paymentOrganization" placeholder="如：XX教育机构" required>
+                        <label>有效截止日期</label>
+                        <input type="date" id="addPaymentEndDate" required>
                     </div>
                 </div>
                 <div class="form-row">
+                    <div class="form-group">
+                        <label>机构名称</label>
+                        <input type="text" id="paymentOrganization" placeholder="如：XX教育机构" required>
+                    </div>
                     <div class="form-group">
                         <label>缴费金额（元）</label>
                         <input type="number" id="paymentAmount" min="0" step="0.01" placeholder="请输入金额" required>
                     </div>
-                    <div class="form-group">
-                        <label>购买课时数</label>
-                        <input type="number" id="paymentHours" min="1" placeholder="请输入课时数" required>
-                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>有效截止日期</label>
-                        <input type="date" id="paymentEndDate" required>
+                        <label>购买课时数</label>
+                        <input type="number" id="paymentHours" min="1" placeholder="请输入课时数" required>
                     </div>
                     <div class="form-group">
                         <label>备注（可选）</label>
@@ -592,6 +595,55 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeEndPaymentModal()">取消</button>
                 <button class="btn btn-primary" onclick="endPayment()">确认结束</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 续费模态框 -->
+    <div class="modal-overlay" id="renewPaymentModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>续费</h3>
+                <button class="modal-close" onclick="closeRenewPaymentModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="renewPaymentId">
+                
+                <div class="form-group">
+                    <label>原缴费记录</label>
+                    <input type="text" id="renewOrgInfo" readonly style="background-color: #f5f5f5;">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>剩余课时</label>
+                        <input type="number" id="renewRemainingHours" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div class="form-group">
+                        <label>截止日期</label>
+                        <input type="date" id="renewEndDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>续费金额（元）</label>
+                        <input type="number" id="renewAmount" min="0" step="0.01" placeholder="请输入续费金额" required>
+                    </div>
+                    <div class="form-group">
+                        <label>续费课时数</label>
+                        <input type="number" id="renewHours" min="1" placeholder="请输入续费课时数" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>备注（可选）</label>
+                    <input type="text" id="renewNote" placeholder="如：2024年秋季学期续费">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeRenewPaymentModal()">取消</button>
+                <button class="btn btn-primary" onclick="renewPayment()">确认续费</button>
             </div>
         </div>
     </div>

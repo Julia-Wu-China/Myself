@@ -34,7 +34,7 @@ header h1 {
     display: flex;
     background: white;
     border-bottom: 2px solid #e0e0e0;
-    padding: 0 20px;
+    padding: 0;
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
@@ -339,8 +339,33 @@ header h1 {
 .payment-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 14px;
     margin-top: 10px;
+}
+
+.detail-table th,
+.detail-table td {
+    border: 1px solid #e0e0e0;
+    padding: 12px;
+    text-align: left;
+}
+
+.detail-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #555;
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
 }
 
 .payment-table th,
@@ -402,7 +427,7 @@ header h1 {
     padding: 8px;
     text-align: center;
     white-space: nowrap;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 .schedule-table th {
@@ -415,16 +440,24 @@ header h1 {
     background: #fff3e0;
     font-weight: 500;
     min-width: 80px;
+    padding: 0 !important;
 }
 
 .schedule-table .class-cell {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 6px;
-    padding: 6px;
+    padding: 8px;
     cursor: pointer;
     transition: transform 0.2s;
-    min-height: 50px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .schedule-table .class-cell:hover {
@@ -486,13 +519,19 @@ header h1 {
 .schedule-table .class-cell-item {
     color: white;
     border-radius: 6px;
-    padding: 4px;
+    padding: 6px;
     cursor: pointer;
     transition: transform 0.2s;
     font-size: 11px;
     line-height: 1.3;
     min-width: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .schedule-table .class-cell-item:hover {

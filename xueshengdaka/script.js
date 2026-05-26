@@ -247,7 +247,7 @@ function renderPaymentTable() {
     const tbody = document.getElementById('paymentTable').querySelector('tbody');
     
     if (payments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">暂无缴费记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="empty-state">暂无缴费记录</td></tr>';
         return;
     }
     
@@ -269,12 +269,16 @@ function renderPaymentTable() {
         html += `<td>${payment.usedHours}</td>`;
         html += `<td>${remainingHours}</td>`;
         html += `<td>${payment.endDate || '-'}</td>`;
+        html += `<td>${payment.note || '-'}</td>`;
         html += `<td class="${status.class}">${status.text}</td>`;
         html += `<td class="actions">`;
         html += `<button class="btn btn-secondary" style="padding:5px 10px;font-size:12px" onclick="editPayment('${payment.id}')">编辑</button>`;
         html += `<button class="btn btn-danger" style="padding:5px 10px;font-size:12px" onclick="deletePayment('${payment.id}')">删除</button>`;
         if (payment.status !== 'ended' && remainingHours > 0) {
             html += `<button class="btn btn-warning" style="padding:5px 10px;font-size:12px;background:#ff9800;color:white" onclick="showEndPaymentModal('${payment.id}')">结束</button>`;
+        }
+        if (payment.status === 'active') {
+            html += `<button class="btn btn-success" style="padding:5px 10px;font-size:12px;background:#28a745;color:white" onclick="showRenewPaymentModal('${payment.id}')">续费</button>`;
         }
         html += `</td>`;
         html += `</tr>`;
@@ -352,7 +356,7 @@ function showAddPaymentModal() {
     document.getElementById('paymentOrganization').value = '';
     document.getElementById('paymentAmount').value = '';
     document.getElementById('paymentHours').value = '';
-    document.getElementById('paymentEndDate').value = '2999-12-31';
+    document.getElementById('addPaymentEndDate').value = '2999-12-31';
     document.getElementById('paymentNote').value = '';
 }
 
@@ -365,7 +369,7 @@ function addPayment() {
     const organization = document.getElementById('paymentOrganization').value;
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     const hours = parseInt(document.getElementById('paymentHours').value);
-    const endDate = document.getElementById('paymentEndDate').value;
+    const endDate = document.getElementById('addPaymentEndDate').value;
     const note = document.getElementById('paymentNote').value;
     
     if (!date || !organization || !amount || !hours || !endDate) {
@@ -505,6 +509,67 @@ function endPayment() {
     updatePaymentSelect();
     
     alert('缴费记录已结束');
+}
+
+// 续费相关函数
+function showRenewPaymentModal(paymentId) {
+    const payments = getPayments();
+    const payment = payments.find(p => p.id === paymentId);
+    
+    if (!payment) return;
+    
+    const remainingHours = payment.totalHours - payment.usedHours;
+    
+    document.getElementById('renewPaymentId').value = payment.id;
+    document.getElementById('renewOrgInfo').value = `${payment.date} - ${payment.organization || '-'}`;
+    document.getElementById('renewRemainingHours').value = remainingHours;
+    document.getElementById('renewEndDate').value = payment.endDate || '2999-12-31';
+    document.getElementById('renewAmount').value = '';
+    document.getElementById('renewHours').value = '';
+    document.getElementById('renewNote').value = '';
+    
+    document.getElementById('renewPaymentModal').style.display = 'flex';
+}
+
+function closeRenewPaymentModal() {
+    document.getElementById('renewPaymentModal').style.display = 'none';
+}
+
+function renewPayment() {
+    const paymentId = document.getElementById('renewPaymentId').value;
+    const endDate = document.getElementById('renewEndDate').value;
+    const amount = parseFloat(document.getElementById('renewAmount').value);
+    const hours = parseInt(document.getElementById('renewHours').value);
+    const note = document.getElementById('renewNote').value;
+    
+    if (!endDate || !amount || !hours) {
+        alert('请填写完整信息');
+        return;
+    }
+    
+    const payments = getPayments();
+    const paymentIndex = payments.findIndex(p => p.id === paymentId);
+    
+    if (paymentIndex === -1) return;
+    
+    const payment = payments[paymentIndex];
+    
+    // 更新缴费记录：增加金额和课时
+    payment.amount += amount;
+    payment.totalHours += hours;
+    payment.endDate = endDate;
+    payment.status = 'active';
+    
+    if (note) {
+        payment.note = (payment.note || '') + '; ' + note;
+    }
+    
+    savePayments(payments);
+    closeRenewPaymentModal();
+    renderPaymentTable();
+    updatePaymentSelect();
+    
+    alert('续费成功');
 }
 
 // 编辑缴费记录
@@ -1909,7 +1974,7 @@ function renderStatsDetail(type) {
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>缴费日期</th><th>机构名称</th><th>课包总价（元）</th><th>课包课时</th><th>金额（元）</th><th>状态</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>缴费日期</th><th>机构名称</th><th>课包总价（元）</th><th>课包课时</th><th>金额（元）</th></tr></thead><tbody>';
         let totalAmount = 0;
         
         filteredPayments.forEach(payment => {
@@ -1923,12 +1988,11 @@ function renderStatsDetail(type) {
                     <td>¥${originalAmount.toFixed(2)}</td>
                     <td>${payment.originalTotalHours || payment.totalHours}</td>
                     <td>¥${payment.amount.toFixed(2)}</td>
-                    <td class="${payment.status === 'active' ? 'status-active' : 'status-ended'}">${payment.status === 'active' ? '使用中' : '已结束'}</td>
                 </tr>
             `;
         });
         
-        html += `<tr><td colspan="4" style="text-align:right"><strong>合计</strong></td><td><strong>¥${totalAmount.toFixed(2)}</strong></td><td></td></tr>`;
+        html += `<tr><td colspan="4" style="text-align:right"><strong>合计</strong></td><td><strong>¥${totalAmount.toFixed(2)}</strong></td></tr>`;
         html += '</tbody></table>';
         document.getElementById('statsDetailContent').innerHTML = html;
     }
@@ -2129,6 +2193,9 @@ function init() {
     
     renderAllSchedule();
     renderStudentCourses();
+    
+    // 默认显示今日签到页
+    switchTab('attendance');
     renderStats();
     renderAttendance();
 }
