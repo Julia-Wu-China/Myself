@@ -169,16 +169,39 @@ function prevWeek() {
 let scheduleRotated = false;
 function rotateSchedule() {
     const container = document.getElementById('scheduleContainer');
-    if (!container) return;
+    const table = document.getElementById('allScheduleTable');
+    if (!container || !table) return;
     
     if (scheduleRotated) {
-        container.style.transform = 'rotate(0deg)';
-        container.style.transformOrigin = 'center center';
-        container.style.width = 'auto';
+        // 恢复原状
+        table.style.transform = '';
+        table.style.width = '';
+        table.style.height = '';
+        table.style.position = '';
+        container.style.overflowX = 'auto';
+        container.style.overflowY = '';
+        container.style.height = '';
     } else {
-        container.style.transform = 'rotate(90deg)';
-        container.style.transformOrigin = 'center center';
-        container.style.width = '100vh';
+        // 旋转90度并适配容器
+        const containerWidth = container.offsetWidth;
+        
+        // 课程表高度 = 容器宽度 - 5px
+        const targetHeight = containerWidth - 5;
+        const tableWidth = table.offsetWidth;
+        
+        // 计算缩放比例
+        const scale = targetHeight / tableWidth;
+        
+        // 设置表格样式
+        table.style.transform = `rotate(90deg) scale(${scale})`;
+        table.style.transformOrigin = 'center center';
+        table.style.width = `${containerWidth}px`;
+        table.style.height = `${targetHeight}px`;
+        table.style.position = 'relative';
+        
+        // 设置容器高度 = 课程表高度 + 5px
+        container.style.overflow = 'hidden';
+        container.style.height = `${targetHeight + 5}px`;
     }
     scheduleRotated = !scheduleRotated;
 }
@@ -734,6 +757,21 @@ function renderStudentSelector() {
     updateScheduleStudentFilter();
     updateDetailStudentFilter();
     updateStatsStudentFilter();
+    updateStatsOrgFilter();
+    updateStatsCourseFilter();
+    
+    // 添加筛选器联动事件
+    document.getElementById('statsStudentFilter')?.addEventListener('change', function() {
+        const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
+        updateStatsCourseFilter(this.value, filterOrg);
+        document.getElementById('statsCourseFilter').value = '';
+    });
+    
+    document.getElementById('statsOrgFilter')?.addEventListener('change', function() {
+        const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
+        updateStatsCourseFilter(filterStudent, this.value);
+        document.getElementById('statsCourseFilter').value = '';
+    });
 }
 
 function updateStudentSelect() {
@@ -784,6 +822,49 @@ function updateStatsStudentFilter() {
         const option = document.createElement('option');
         option.value = student;
         option.textContent = student;
+        select.appendChild(option);
+    });
+}
+
+function updateStatsOrgFilter() {
+    const select = document.getElementById('statsOrgFilter');
+    const payments = getPayments();
+    const orgs = [...new Set(payments.map(p => p.organization).filter(Boolean))];
+    select.innerHTML = '<option value="">全部机构</option>';
+    
+    orgs.sort().forEach(org => {
+        const option = document.createElement('option');
+        option.value = org;
+        option.textContent = org;
+        select.appendChild(option);
+    });
+}
+
+function updateStatsCourseFilter(filterStudent = '', filterOrg = '') {
+    const select = document.getElementById('statsCourseFilter');
+    const courses = getCourses();
+    const payments = getPayments();
+    
+    let filteredCourses = courses;
+    
+    // 根据学生筛选
+    if (filterStudent) {
+        filteredCourses = filteredCourses.filter(c => c.studentName === filterStudent);
+    }
+    
+    // 根据机构筛选
+    if (filterOrg) {
+        const orgPayments = payments.filter(p => p.organization === filterOrg).map(p => p.id);
+        filteredCourses = filteredCourses.filter(c => orgPayments.includes(c.paymentId));
+    }
+    
+    const courseNames = [...new Set(filteredCourses.map(c => c.courseName).filter(Boolean))];
+    select.innerHTML = '<option value="">全部课程</option>';
+    
+    courseNames.sort().forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
         select.appendChild(option);
     });
 }
@@ -1011,12 +1092,18 @@ function updateCourse() {
 function deleteCourse() {
     const courseId = document.getElementById('editCourseId').value;
     
-    if (!confirm('确定要删除这门课程吗？')) {
+    const courses = getCourses();
+    const course = courses.find(c => c.id === courseId);
+    
+    // 检查是否已使用过课时
+    if (course && (course.usedHours || 0) > 0) {
+        alert('该课程已使用过课时，不允许删除！');
         return;
     }
     
-    const courses = getCourses();
-    const course = courses.find(c => c.id === courseId);
+    if (!confirm('确定要删除这门课程吗？')) {
+        return;
+    }
     
     if (course && course.paymentId) {
         const payments = getPayments();
@@ -1297,6 +1384,17 @@ function renderStudentCourses() {
         });
     }
     
+    // 按学生名称 → 机构名称 → 课程名称排序
+    courses.sort((a, b) => {
+        if (a.studentName !== b.studentName) {
+            return a.studentName.localeCompare(b.studentName);
+        }
+        if ((a.institution || '') !== (b.institution || '')) {
+            return (a.institution || '').localeCompare(b.institution || '');
+        }
+        return a.courseName.localeCompare(b.courseName);
+    });
+    
     const container = document.getElementById('studentCourseDetail');
     
     if (courses.length === 0) {
@@ -1348,6 +1446,8 @@ function renderStudentCourses() {
 // 渲染课时统计
 function renderStats() {
     const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
+    const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
+    const filterCourse = document.getElementById('statsCourseFilter')?.value || '';
     const startDate = document.getElementById('statsStartDate')?.value || '';
     const endDate = document.getElementById('statsEndDate')?.value || '';
     
@@ -1364,6 +1464,18 @@ function renderStats() {
         filteredPayments = filteredPayments.filter(p => {
             return filteredCourses.some(c => c.paymentId === p.id);
         });
+    }
+    
+    if (filterOrg) {
+        filteredPayments = filteredPayments.filter(p => p.organization === filterOrg);
+        const orgPayments = filteredPayments.map(p => p.id);
+        filteredCourses = filteredCourses.filter(c => orgPayments.includes(c.paymentId));
+    }
+    
+    if (filterCourse) {
+        filteredCourses = filteredCourses.filter(c => c.courseName === filterCourse);
+        const coursePayments = filteredCourses.map(c => c.paymentId);
+        filteredPayments = filteredPayments.filter(p => coursePayments.includes(p.id));
     }
     
     if (startDate || endDate) {
@@ -1821,6 +1933,8 @@ function hideStatsDetail() {
 
 function renderStatsDetail(type) {
     const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
+    const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
+    const filterCourse = document.getElementById('statsCourseFilter')?.value || '';
     const startDate = document.getElementById('statsStartDate')?.value || '';
     const endDate = document.getElementById('statsEndDate')?.value || '';
     
@@ -1829,8 +1943,18 @@ function renderStatsDetail(type) {
     const payments = getPayments();
     
     let filteredCourses = courses;
+    
     if (filterStudent) {
         filteredCourses = filteredCourses.filter(c => c.studentName === filterStudent);
+    }
+    
+    if (filterOrg) {
+        const orgPayments = payments.filter(p => p.organization === filterOrg).map(p => p.id);
+        filteredCourses = filteredCourses.filter(c => orgPayments.includes(c.paymentId));
+    }
+    
+    if (filterCourse) {
+        filteredCourses = filteredCourses.filter(c => c.courseName === filterCourse);
     }
     
     if (type === 'used') {
@@ -1950,7 +2074,20 @@ function renderStatsDetail(type) {
         // 已消费金额明细 - 按课程显示已消耗金额
         document.getElementById('statsDetailTitle').textContent = '已消费金额明细';
         
-        let html = '<table class="detail-table"><thead><tr><th>学生姓名</th><th>课程名称</th><th>机构名称</th><th>已用课时</th><th>课时单价</th><th>已消费金额（元）</th></tr></thead><tbody>';
+        // 按学生名称 → 机构名称 → 课程名称排序
+        filteredCourses.sort((a, b) => {
+            if (a.studentName !== b.studentName) {
+                return a.studentName.localeCompare(b.studentName);
+            }
+            const orgA = payments.find(p => p.id === a.paymentId)?.organization || '';
+            const orgB = payments.find(p => p.id === b.paymentId)?.organization || '';
+            if (orgA !== orgB) {
+                return orgA.localeCompare(orgB);
+            }
+            return a.courseName.localeCompare(b.courseName);
+        });
+        
+        let html = '<table class="detail-table"><thead><tr><th>学生姓名</th><th>机构名称</th><th>课程名称</th><th>已用课时</th><th>课时单价</th><th>已消费金额（元）</th></tr></thead><tbody>';
         let totalConsumed = 0;
         
         filteredCourses.forEach(course => {
@@ -1964,8 +2101,8 @@ function renderStatsDetail(type) {
                     html += `
                         <tr>
                             <td>${course.studentName}</td>
-                            <td>${course.courseName}</td>
                             <td>${payment.organization || '-'}</td>
+                            <td>${course.courseName}</td>
                             <td>${course.usedHours || 0}</td>
                             <td>¥${unitPrice.toFixed(2)}</td>
                             <td>¥${consumed.toFixed(2)}</td>
