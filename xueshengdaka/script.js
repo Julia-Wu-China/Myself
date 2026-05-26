@@ -1846,6 +1846,13 @@ function confirmLeave() {
     
     closeLeaveModal();
     renderAttendance();
+    
+    // 如果课时统计明细区域正在显示，同步更新未消课明细
+    const statsDetailSection = document.getElementById('statsDetailSection');
+    if (statsDetailSection && statsDetailSection.style.display === 'block') {
+        const type = document.getElementById('statsDetailType').value;
+        renderStatsDetail(type);
+    }
 }
 
 // 获取下次课程日期
@@ -2101,6 +2108,7 @@ function renderStatsDetail(type) {
         const now = new Date();
         const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
         let missedClasses = [];
+        const leaveRecords = getLeaveRecords();
         
         filteredCourses.forEach(course => {
             if (course.status !== 'active') return;
@@ -2129,7 +2137,10 @@ function renderStatsDetail(type) {
                     // 检查是否已经签到
                     const isSigned = attendance.some(a => a.courseId === course.id && a.date === dateStr);
                     
-                    if (!isSigned) {
+                    // 检查是否已经请假
+                    const isLeave = leaveRecords.some(l => l.courseId === course.id && l.date === dateStr);
+                    
+                    if (!isSigned && !isLeave) {
                         missedClasses.push({
                             courseId: course.id,
                             studentName: course.studentName,
@@ -2142,6 +2153,26 @@ function renderStatsDetail(type) {
                     currentDate.setDate(currentDate.getDate() + 7);
                 }
             });
+        });
+        
+        // 按学生姓名、课程名称、日期、上课时间排序
+        missedClasses.sort((a, b) => {
+            // 按学生姓名排序
+            const nameCompare = a.studentName.localeCompare(b.studentName, 'zh-CN');
+            if (nameCompare !== 0) return nameCompare;
+            
+            // 按课程名称排序
+            const courseCompare = a.courseName.localeCompare(b.courseName, 'zh-CN');
+            if (courseCompare !== 0) return courseCompare;
+            
+            // 按日期排序
+            const dateCompare = a.date.localeCompare(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            
+            // 按上课时间排序
+            const timeA = a.schedule?.startTime || '';
+            const timeB = b.schedule?.startTime || '';
+            return timeA.localeCompare(timeB);
         });
         
         document.getElementById('statsDetailTitle').textContent = '未消课明细';
