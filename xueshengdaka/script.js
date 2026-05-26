@@ -165,6 +165,24 @@ function prevWeek() {
     renderAllSchedule();
 }
 
+// 旋转课程表
+let scheduleRotated = false;
+function rotateSchedule() {
+    const container = document.getElementById('scheduleContainer');
+    if (!container) return;
+    
+    if (scheduleRotated) {
+        container.style.transform = 'rotate(0deg)';
+        container.style.transformOrigin = 'center center';
+        container.style.width = 'auto';
+    } else {
+        container.style.transform = 'rotate(90deg)';
+        container.style.transformOrigin = 'center center';
+        container.style.width = '100vh';
+    }
+    scheduleRotated = !scheduleRotated;
+}
+
 // 下一周
 function nextWeek() {
     const startDateInput = document.getElementById('scheduleStartDate');
@@ -1250,12 +1268,17 @@ function renderStudentCourses() {
     const filterStudent = document.getElementById('detailStudentFilter').value;
     const detailStartDate = document.getElementById('detailStartDate').value;
     const detailEndDate = document.getElementById('detailEndDate').value;
+    const filterStatus = document.getElementById('detailStatusFilter').value;
     
     let courses = getCourses();
     const payments = getPayments();
     
     if (filterStudent) {
         courses = courses.filter(c => c.studentName === filterStudent);
+    }
+    
+    if (filterStatus) {
+        courses = courses.filter(c => c.status === filterStatus);
     }
     
     if (detailStartDate || detailEndDate) {

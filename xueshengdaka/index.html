@@ -188,8 +188,9 @@
                 <button class="btn btn-secondary" onclick="renderAllSchedule()">查询</button>
                 <button class="btn btn-secondary" onclick="prevWeek()">上周</button>
                 <button class="btn btn-secondary" onclick="nextWeek()">下周</button>
+                <button class="btn btn-secondary rotate-btn" onclick="rotateSchedule()" title="旋转查看">↻</button>
             </div>
-            <div class="schedule-container">
+            <div class="schedule-container" id="scheduleContainer">
                 <table class="schedule-table" id="allScheduleTable">
                     <thead>
                         <tr>
@@ -221,6 +222,11 @@
                 </select>
                 <input type="date" id="detailStartDate" value="2026-02-25">
                 <input type="date" id="detailEndDate" value="2026-05-25">
+                <select id="detailStatusFilter" onchange="renderStudentCourses()">
+                    <option value="">全部状态</option>
+                    <option value="active" selected>进行中</option>
+                    <option value="ended">已结束</option>
+                </select>
                 <button class="btn btn-secondary" onclick="renderStudentCourses()">查询</button>
             </div>
             <div id="studentCourseDetail">
