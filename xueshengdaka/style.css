@@ -976,13 +976,18 @@ header h1 {
     }
     
     .nav-tabs {
-        padding: 0 10px;
-        justify-content: center;
+        padding: 0;
+        justify-content: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
     }
     
     .nav-tab {
-        padding: 12px 15px;
-        font-size: 13px;
+        padding: 12px 12px;
+        font-size: 12px;
+        flex-shrink: 0;
     }
     
     .section {

@@ -1516,6 +1516,13 @@ function renderStats() {
     statValues[1].textContent = totalRemainingHours;
     statValues[2].textContent = totalConsumedAmount.toFixed(0);
     statValues[3].textContent = totalPaidAmount.toFixed(0);
+    
+    // 如果明细区域正在显示，同步更新明细表格
+    const detailSection = document.getElementById('statsDetailSection');
+    if (detailSection && detailSection.style.display === 'block') {
+        const type = document.getElementById('statsDetailType').value;
+        renderStatsDetail(type);
+    }
 }
 
 // 渲染今日签到
@@ -1959,11 +1966,10 @@ function renderStatsDetail(type) {
     
     if (type === 'used') {
         // 已消课明细 - 显示签到记录
-        let filteredAttendance = attendance;
+        // 使用已经过滤后的课程列表来获取课程ID
+        const filteredCourseIds = filteredCourses.map(c => c.id);
         
-        if (filterStudent) {
-            filteredAttendance = filteredAttendance.filter(a => a.studentName === filterStudent);
-        }
+        let filteredAttendance = attendance.filter(a => filteredCourseIds.includes(a.courseId));
         
         if (startDate) {
             filteredAttendance = filteredAttendance.filter(a => a.date >= startDate);
@@ -1980,13 +1986,23 @@ function renderStatsDetail(type) {
             return;
         }
         
-        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>时间</th><th>学生姓名</th><th>课程名称</th><th>操作</th></tr></thead><tbody>';
+        let html = '<table class="detail-table"><thead><tr><th>日期</th><th>上课时间</th><th>学生姓名</th><th>课程名称</th><th>操作</th></tr></thead><tbody>';
+        const courses = getCourses();
         
         filteredAttendance.forEach(record => {
+            // 获取上课日期（课程安排的日期）
+            const classDate = record.classDate || record.date;
+            
+            // 获取上课时间段（课程安排的时间段）
+            const schedule = record.schedule || {};
+            const timeSlot = schedule.startTime && schedule.endTime 
+                ? `${schedule.startTime}-${schedule.endTime}` 
+                : record.time;
+            
             html += `
                 <tr>
-                    <td>${record.date}</td>
-                    <td>${record.time}</td>
+                    <td>${classDate}</td>
+                    <td>${timeSlot}</td>
                     <td>${record.studentName}</td>
                     <td>${record.courseName}</td>
                     <td>
