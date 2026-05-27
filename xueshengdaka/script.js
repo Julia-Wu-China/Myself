@@ -776,7 +776,7 @@ function rotateSchedule() {
         table.style.width = '';
         table.style.height = '';
         table.style.margin = '';
-        container.style.overflow = 'auto';
+        container.style.overflow = '';
         container.style.height = '';
         container.style.maxHeight = '';
     } else {
@@ -792,9 +792,9 @@ function rotateSchedule() {
         table.style.width = `${tableHeight}px`;
         table.style.height = `${tableWidth}px`;
 
-        container.style.overflow = 'auto';
-        container.style.maxHeight = `${Math.min(window.innerHeight * 0.75, tableWidth + 40)}px`;
-        container.style.height = container.style.maxHeight;
+        container.style.overflow = 'visible';
+        container.style.maxHeight = 'none';
+        container.style.height = `${tableWidth + 5}px`;
     }
     scheduleRotated = !scheduleRotated;
 }
