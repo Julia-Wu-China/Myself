@@ -98,7 +98,7 @@ header h1 {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    overflow-x: auto;
+    overflow: visible;
 }
 
 .section-title {
@@ -1350,11 +1350,13 @@ header h1 {
     }
     
     .schedule-table th {
-        min-width: 100px;
+        min-width: 80px;
+        width: 80px;
     }
     
     .schedule-table .time-slot {
-        min-width: 60px;
+        min-width: 30px;
+        width: 30px;
     }
     
     .schedule-table .class-cell,
@@ -1580,7 +1582,8 @@ header h1 {
     }
     
     .schedule-table .time-slot {
-        min-width: 55px;
+        min-width: 30px;
+        width: 30px;
     }
     
     .schedule-table .class-cell,

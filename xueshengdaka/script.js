@@ -181,23 +181,41 @@ async function autoSyncToCloud() {
             }
         }
         
-        // 如果本地有数据且云端数据更旧，上传本地数据
-        const localTime = localStorage.getItem('lastSyncTime') || '2000-01-01T00:00:00.000Z';
-        const cloudTime = cloudData?.lastSyncTime || '2000-01-01T00:00:00.000Z';
-        
-        if (localTime > cloudTime) {
-            await syncToCloud();
+        // 如果云端有数据且本地无数据，下载云端数据
+        if (cloudData && cloudData.students && cloudData.students.length > 0) {
+            const localStudents = getStudents();
+            if (!localStudents || localStudents.length === 0) {
+                await syncFromCloud(cloudData);
+                return;
+            }
         }
     } catch (error) {
         console.error('自动同步失败:', error);
     }
 }
 
-function syncWithCloud() {
+async function syncWithCloud() {
     if (!isCloudSyncEnabled) {
         initFirebase();
-    } else {
-        syncToCloud();
+        return;
+    }
+    
+    try {
+        showSyncStatus('🔄 正在同步...', '#FF9800');
+        
+        // 第一步：先从云端拉取最新数据
+        const doc = await db.collection('appData').doc('main').get();
+        if (doc.exists) {
+            await syncFromCloud(doc.data());
+        }
+        
+        // 第二步：上传本地数据到云端
+        await syncToCloud();
+        
+        showSyncStatus('✅ 双向同步完成', '#4CAF50');
+    } catch (error) {
+        console.error('双向同步失败:', error);
+        showSyncStatus('❌ 同步失败', '#F44336');
     }
 }
 
@@ -751,7 +769,7 @@ let scheduleRotated = false;
 function rotateSchedule() {
     const container = document.getElementById('scheduleContainer');
     const table = document.getElementById('allScheduleTable');
-    const section = container?.closest('.section');
+    const section = document.getElementById('scheduleSection');
     if (!container || !table) return;
 
     if (scheduleRotated) {
@@ -778,9 +796,21 @@ function rotateSchedule() {
         if (section) {
             section.style.height = '';
             section.style.overflow = '';
+            section.style.paddingBottom = '';
         }
         scheduleRotated = false;
     } else {
+        const isMobile = window.innerWidth <= 768;
+
+        // 获取容器可用宽度
+        const containerWidth = section ? section.clientWidth - 40 : container.clientWidth;
+        const targetHeight = containerWidth - 10; // 两边各留5px
+
+        // 计算原表格行数
+        const rowCount = table.querySelectorAll('tbody tr').length;
+        // 计算每行需要的高度，让总行高 = 目标视觉宽度
+        const rowHeight = rowCount > 0 ? Math.floor(targetHeight / rowCount) : 30;
+
         table.style.transform = 'rotate(90deg) translate(0, -100%)';
         table.style.transformOrigin = 'top left';
         table.style.position = 'relative';
@@ -790,7 +820,7 @@ function rotateSchedule() {
         table.style.width = 'auto';
         table.style.height = 'auto';
 
-        container.style.overflowX = window.innerWidth <= 768 ? 'auto' : 'visible';
+        container.style.overflowX = 'hidden';
         container.style.overflowY = 'hidden';
         container.style.maxHeight = 'none';
         container.style.padding = '0';
@@ -798,19 +828,38 @@ function rotateSchedule() {
         container.style.position = 'relative';
         container.style.width = 'auto';
 
-        // 手机端转置后先设置列宽为300px
-        if (window.innerWidth <= 768) {
-            const ths = table.querySelectorAll('th');
-            ths.forEach(th => { th.style.minWidth = '300px'; });
-        }
+        // 转置后列宽：手机端时间列60px，周一~周日120px；桌面端时间列80px，周一~周日200px
+        const baseWidths = isMobile
+            ? [60, 120, 120, 120, 120, 120, 120, 120]
+            : [80, 200, 200, 200, 200, 200, 200, 200];
+
+        const ths = table.querySelectorAll('thead th');
+        ths.forEach((th, index) => {
+            th.style.width = baseWidths[index] + 'px';
+            th.style.minWidth = baseWidths[index] + 'px';
+        });
+
+        // 设置所有行高度，让原表格高度 = 容器宽度
+        const tbodyRows = table.querySelectorAll('tbody tr');
+        tbodyRows.forEach(row => {
+            row.style.height = rowHeight + 'px';
+            const tds = row.querySelectorAll('td');
+            tds.forEach((td, index) => {
+                if (baseWidths[index]) {
+                    td.style.width = baseWidths[index] + 'px';
+                    td.style.minWidth = baseWidths[index] + 'px';
+                }
+            });
+        });
 
         // 等待渲染完成后获取transform后的实际尺寸
         requestAnimationFrame(() => {
             const rotatedRect = table.getBoundingClientRect();
-            container.style.height = `${rotatedRect.height + 10}px`;
+            container.style.height = `${rotatedRect.height + 35}px`;
             if (section) {
                 section.style.height = 'auto';
-                section.style.overflow = 'hidden';
+                section.style.overflow = 'visible';
+                section.style.paddingBottom = '5px';
             }
         });
         scheduleRotated = true;
