@@ -2009,6 +2009,21 @@ function renderStudentCourses() {
     container.innerHTML = html;
 }
 
+// 清空“学生课程详情”筛选条件并刷新
+function resetDetailFilters() {
+    const studentSelect = document.getElementById('detailStudentFilter');
+    const startInput = document.getElementById('detailStartDate');
+    const endInput = document.getElementById('detailEndDate');
+    const statusSelect = document.getElementById('detailStatusFilter');
+
+    if (studentSelect) studentSelect.value = '';
+    if (startInput) startInput.value = '';
+    if (endInput) endInput.value = '';
+    if (statusSelect) statusSelect.value = '';
+
+    renderStudentCourses();
+}
+
 // 渲染课时统计
 function resetStatsFilters() {
     document.getElementById('statsStudentFilter').value = '';
