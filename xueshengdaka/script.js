@@ -128,10 +128,8 @@ async function syncFromCloud(cloudData) {
             localStorage.setItem('lastSyncTime', cloudTime);
             showSyncStatus('🔄 数据已从云端更新', '#2196F3');
             
-            // 刷新页面显示更新后的数据
-            setTimeout(() => {
-                location.reload();
-            }, 500);
+            // 显示提示让用户手动刷新
+            alert('云端数据已更新，请手动刷新页面查看最新数据');
         }
     } catch (error) {
         console.error('从云端同步失败:', error);
@@ -753,6 +751,7 @@ let scheduleRotated = false;
 function rotateSchedule() {
     const container = document.getElementById('scheduleContainer');
     const table = document.getElementById('allScheduleTable');
+    const section = container?.closest('.section');
     if (!container || !table) return;
 
     if (scheduleRotated) {
@@ -765,35 +764,57 @@ function rotateSchedule() {
         table.style.height = '';
         table.style.margin = '';
         container.style.overflow = '';
+        container.style.overflowX = '';
+        container.style.overflowY = '';
         container.style.height = '';
         container.style.maxHeight = '';
         container.style.padding = '';
         container.style.margin = '';
         container.style.position = '';
         container.style.width = '';
+        // 恢复th的minWidth
+        const ths = table.querySelectorAll('th');
+        ths.forEach(th => { th.style.minWidth = ''; });
+        if (section) {
+            section.style.height = '';
+            section.style.overflow = '';
+        }
+        scheduleRotated = false;
     } else {
-        const rect = table.getBoundingClientRect();
-        const tableWidth = rect.width;
-        const tableHeight = rect.height;
-
         table.style.transform = 'rotate(90deg) translate(0, -100%)';
         table.style.transformOrigin = 'top left';
         table.style.position = 'relative';
         table.style.top = '0';
         table.style.left = '0';
         table.style.margin = '5px';
-        table.style.width = `${tableHeight}px`;
-        table.style.height = `${tableWidth}px`;
+        table.style.width = 'auto';
+        table.style.height = 'auto';
 
-        container.style.overflow = 'auto';
+        container.style.overflowX = window.innerWidth <= 768 ? 'auto' : 'visible';
+        container.style.overflowY = 'hidden';
         container.style.maxHeight = 'none';
-        container.style.height = `${tableWidth + 10}px`;
         container.style.padding = '0';
         container.style.margin = '0';
         container.style.position = 'relative';
-        container.style.width = `${tableHeight + 10}px`;
+        container.style.width = 'auto';
+
+        // 手机端转置后先设置列宽为300px
+        if (window.innerWidth <= 768) {
+            const ths = table.querySelectorAll('th');
+            ths.forEach(th => { th.style.minWidth = '300px'; });
+        }
+
+        // 等待渲染完成后获取transform后的实际尺寸
+        requestAnimationFrame(() => {
+            const rotatedRect = table.getBoundingClientRect();
+            container.style.height = `${rotatedRect.height + 10}px`;
+            if (section) {
+                section.style.height = 'auto';
+                section.style.overflow = 'hidden';
+            }
+        });
+        scheduleRotated = true;
     }
-    scheduleRotated = !scheduleRotated;
 }
 
 // 下一周
@@ -1622,17 +1643,8 @@ function renderStudentSelector() {
         const nameSpan = document.createElement('span');
         nameSpan.textContent = student;
         nameSpan.onclick = () => selectStudent(student);
+        nameSpan.ondblclick = () => editStudentName(student);
         tag.appendChild(nameSpan);
-        
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-btn';
-        editBtn.textContent = '✎';
-        editBtn.title = '修改名字';
-        editBtn.onclick = (e) => {
-            e.stopPropagation();
-            editStudentName(student);
-        };
-        tag.appendChild(editBtn);
         
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';

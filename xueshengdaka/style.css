@@ -9,6 +9,9 @@ body {
     background-color: #f5f7fa;
     min-height: 100vh;
     padding-bottom: 20px;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
 }
 
 .container {
@@ -95,6 +98,7 @@ header h1 {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow-x: auto;
 }
 
 .section-title {
@@ -194,6 +198,17 @@ header h1 {
     margin-bottom: 15px;
 }
 
+.form-row .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-row .form-group input,
+.form-row .form-group select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .form-row.full-width {
     grid-template-columns: 1fr;
 }
@@ -208,6 +223,11 @@ header h1 {
     font-weight: 500;
     color: #555;
     margin-bottom: 6px;
+}
+
+.form-group label span[style*="color:#999"] {
+    font-size: 10px;
+    font-weight: normal;
 }
 
 .form-group input,
@@ -311,13 +331,17 @@ header h1 {
 }
 
 .btn {
-    padding: 10px 24px;
+    padding: 6px 12px;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s;
+    min-width: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-primary {
@@ -373,43 +397,73 @@ header h1 {
     margin-top: 15px;
 }
 
+.payment-table-container {
+    margin-top: 10px;
+}
+
 .payment-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
-    margin-top: 10px;
+    font-size: 11px;
+    table-layout: auto;
 }
 
 .detail-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 11px;
     margin-top: 10px;
+    table-layout: fixed;
 }
 
 .detail-table th,
 .detail-table td {
     border: 1px solid #e0e0e0;
-    padding: 12px;
+    padding: 6px 4px;
     text-align: left;
+    white-space: normal;
+    word-break: break-all;
 }
 
 .detail-table th {
     background: #f8f9fa;
     font-weight: 600;
     color: #555;
+    font-size: 10px;
 }
 
 .btn-sm {
-    padding: 5px 12px;
-    font-size: 12px;
+    padding: 3px 8px;
+    font-size: 10px;
+}
+
+.detail-table .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.detail-table .actions .btn {
+    padding: 3px 6px;
+    font-size: 10px;
+    white-space: nowrap;
+    min-width: 50px;
+    max-width: 60px;
+}
+
+.detail-table td:last-child {
+    width: 70px;
+    max-width: 70px;
 }
 
 .payment-table th,
 .payment-table td {
     border: 1px solid #e0e0e0;
-    padding: 10px;
+    padding: 6px 8px;
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .payment-table th {
@@ -449,8 +503,7 @@ header h1 {
 }
 
 .schedule-container {
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
+    overflow: visible;
 }
 
 .schedule-table {
@@ -470,7 +523,7 @@ header h1 {
     box-sizing: border-box;
     height: 30px;
     max-height: 30px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
 }
 
@@ -521,8 +574,11 @@ header h1 {
 .schedule-table .class-cell:hover {
     transform: scale(1.8);
     font-size: 9px;
-    z-index: 10;
-    position: relative;
+    z-index: 100;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .schedule-table .class-cell-stack {
@@ -698,10 +754,30 @@ header h1 {
     font-weight: 500;
 }
 
+.course-card-actions .btn:first-child {
+    background: #4caf50 !important;
+    color: white !important;
+}
+
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-card:nth-child(1),
+.stat-card:nth-child(2),
+.stat-card:nth-child(3) {
+    flex: 1;
+    min-width: calc(33.33% - 10px);
+}
+
+.stat-card:nth-child(4),
+.stat-card:nth-child(5) {
+    flex: 1;
+    min-width: calc(50% - 7.5px);
+    max-width: calc(50% - 7.5px);
 }
 
 .stat-card {
@@ -1204,11 +1280,14 @@ header h1 {
     }
     
     .btn-group {
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: flex-start;
     }
     
     .btn-group .btn {
-        width: 100%;
+        width: auto !important;
+        padding: 8px 16px;
+        font-size: 13px;
     }
     
     .checkbox-group {
@@ -1253,7 +1332,7 @@ header h1 {
     .schedule-container {
         overflow: auto;
         margin: 0 -15px;
-        padding: 0 15px;
+        padding: 0 15px 5px;
         -webkit-overflow-scrolling: touch;
     }
     
@@ -1268,6 +1347,10 @@ header h1 {
         padding: 6px 4px;
         white-space: normal;
         word-break: break-word;
+    }
+    
+    .schedule-table th {
+        min-width: 100px;
     }
     
     .schedule-table .time-slot {
@@ -1382,40 +1465,98 @@ header h1 {
         width: 100%;
     }
     
+    .payment-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     .payment-table {
-        font-size: 12px;
+        font-size: 10px;
+        table-layout: auto;
+        min-width: 900px;
     }
     
     .payment-table th,
     .payment-table td {
-        padding: 6px;
+        padding: 4px;
         word-break: break-all;
+        white-space: nowrap;
     }
     
     .payment-table .actions {
-        flex-direction: column;
-        gap: 4px;
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2px;
     }
     
     .payment-table .actions .btn {
-        padding: 6px 10px;
-        font-size: 12px;
+        padding: 2px 3px;
+        font-size: 8px;
+        min-width: 30px;
+        max-width: 45px;
+        white-space: normal;
+        word-break: keep-all;
+    }
+    
+    .detail-table {
+        font-size: 8px !important;
+    }
+    
+    .detail-table th,
+    .detail-table td {
+        font-size: 8px !important;
+        padding: 4px 3px !important;
+    }
+    
+    .detail-table td:last-child {
+        width: 55px !important;
+        max-width: 55px !important;
+        padding: 2px !important;
+        min-width: 55px !important;
+    }
+    
+    .detail-table .btn,
+    .detail-table .btn-sm,
+    .detail-table .btn-warning {
+        padding: 1px 2px !important;
+        font-size: 7px !important;
+        line-height: 1.0 !important;
+        min-width: 35px !important;
+        max-width: 35px !important;
+        width: 35px !important;
+        border-radius: 2px !important;
+        white-space: normal !important;
+        height: auto !important;
+        word-break: break-all !important;
+        display: block !important;
+        margin: 1px 0 !important;
+        text-align: center !important;
     }
     
     /* 课程录入页面表单样式 */
     .course-form label {
-        font-size: 12px;
+        font-size: 8px;
+    }
+    
+    .course-form label span[style*="color:#999"] {
+        font-size: 6px !important;
+        font-weight: normal !important;
     }
     
     .course-form input,
     .course-form select,
     .course-form textarea {
-        font-size: 12px;
-        padding: 8px;
+        font-size: 8px;
+        padding: 6px;
     }
     
     .course-form .form-group {
-        font-size: 12px;
+        font-size: 8px;
+    }
+    
+    .course-form .checkbox-item {
+        font-size: 8px;
+        padding: 6px 8px;
     }
 }
 
@@ -1504,11 +1645,14 @@ header h1 {
     }
     
     .btn-group {
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: flex-start;
     }
     
-    .btn {
-        width: 100%;
+    .btn-group .btn {
+        width: auto !important;
+        padding: 8px 16px;
+        font-size: 13px;
     }
     
     .weekday-time-item {
