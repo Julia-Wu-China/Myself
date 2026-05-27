@@ -31,25 +31,13 @@ function getDaySchedule(course, dayIndex) {
 let currentStudent = '';
 
 // ===== Firebase 实时同步配置 =====
-const firebaseConfig = {
-    apiKey: "AIzaSyB6c8QaYpQ7l5fX3W0P1Q2R3T4U5V6W7X8Y9Z0A1S2D3F4G5H6J7K8L9",
-    authDomain: "student-course-manager-99999.firebaseapp.com",
-    projectId: "student-course-manager-99999",
-    storageBucket: "student-course-manager-99999.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef1234567890"
-};
-
-// 初始化 Firebase
-let firebaseApp = null;
-let db = null;
+// Firebase 已在 index.html 中初始化，db 为全局变量
 let isCloudSyncEnabled = false;
 let syncListener = null;
 
 function initFirebase() {
     try {
-        firebaseApp = firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
+        // db 已在 index.html 中初始化
         isCloudSyncEnabled = true;
         showSyncStatus('✅ 云端同步已连接', '#4CAF50');
         

@@ -5,9 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>课程管理系统</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <!-- Firebase SDK (v8 兼容版本) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCsr07DM60a_kHIRtBwkw_liFobzrK1jbA",
+            authDomain: "xueshengdaka.firebaseapp.com",
+            projectId: "xueshengdaka",
+            storageBucket: "xueshengdaka.firebasestorage.app",
+            messagingSenderId: "396766264269",
+            appId: "1:396766264269:web:8dbabcda26316eafd9e284",
+            measurementId: "G-6E23D73H87"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+    </script>
 </head>
 <body onload="init()">
     <header>
@@ -17,7 +30,6 @@
                 <button class="btn btn-secondary" onclick="exportData()">📥 导出数据</button>
                 <label class="btn btn-secondary import-btn" for="importFile">📤 导入数据</label>
                 <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="display: none;">
-                <button class="btn btn-secondary" onclick="generateShareLink()">🔗 生成分享链接</button>
                 <button class="btn btn-secondary" onclick="syncWithCloud()" id="syncBtn">☁️ 同步</button>
             </div>
             <div id="syncStatus" style="font-size: 12px; color: #666; margin-top: 5px; display: none;"></div>
