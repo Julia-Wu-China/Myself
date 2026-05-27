@@ -1350,9 +1350,13 @@ header h1 {
     .attendance-btn,
     .leave-btn {
         flex: 1;
-        margin-left: 0;
+        margin-left: 8px;
         padding: 10px;
         font-size: 14px;
+    }
+    
+    .attendance-btn:first-child {
+        margin-left: 0;
     }
     
     .modal {

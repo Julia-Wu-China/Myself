@@ -780,23 +780,26 @@ function rotateSchedule() {
         container.style.height = '';
         container.style.maxHeight = '';
         container.style.padding = '';
+        container.style.margin = '';
+        container.style.position = '';
     } else {
         const rect = table.getBoundingClientRect();
         const tableWidth = rect.width;
         const tableHeight = rect.height;
+        const padding = 5; // 周围留5px
 
         table.style.transform = 'rotate(90deg) translate(0, -100%)';
         table.style.transformOrigin = 'top left';
         table.style.position = 'absolute';
-        table.style.top = '0';
-        table.style.left = '0';
+        table.style.top = `${padding}px`;
+        table.style.left = `${padding}px`;
         table.style.margin = '0';
         table.style.width = `${tableHeight}px`;
         table.style.height = `${tableWidth}px`;
 
         container.style.overflow = 'visible';
         container.style.maxHeight = 'none';
-        container.style.height = `${tableWidth}px`;
+        container.style.height = `${tableWidth + padding * 2}px`;
         container.style.padding = '0';
         container.style.margin = '0';
         container.style.position = 'relative';
@@ -4482,7 +4485,7 @@ function fixIncorrectUsedHours() {
 
 // 初始化数据
 function initData() {
-    const dataVersion = 'v12';
+    const dataVersion = 'v13';
     const currentVersion = localStorage.getItem('dataVersion');
     
     // 如果是第一次使用或数据版本不同，进行增量更新
@@ -4524,81 +4527,81 @@ function initData() {
         localStorage.setItem('payments', JSON.stringify([
             {
                 id: 'p1',
-                date: '2026-01-01',
-                organization: '智慧教育',
-                amount: 7000,
-                totalHours: 35,
-                usedHours: 8,
-                endDate: '2026-12-31',
+                date: '2026-05-10',
+                organization: '中国美院',
+                amount: 19600,
+                totalHours: 56,
+                usedHours: 14,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '2026年春季学期学费',
-                originalAmount: 7000,
-                originalTotalHours: 35
+                note: '自然拼读',
+                originalAmount: 19600,
+                originalTotalHours: 56
             },
             {
                 id: 'p2',
-                date: '2026-01-01',
-                organization: '音乐艺术中心',
-                amount: 6000,
-                totalHours: 30,
-                usedHours: 10,
-                endDate: '2026-12-31',
+                date: '2026-05-10',
+                organization: '中国美院',
+                amount: 19600,
+                totalHours: 56,
+                usedHours: 14,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '钢琴课全年学费',
-                originalAmount: 6000,
-                originalTotalHours: 30
+                note: '自然拼读',
+                originalAmount: 19600,
+                originalTotalHours: 56
             },
             {
                 id: 'p3',
-                date: '2026-03-01',
-                organization: '编程学院',
-                amount: 4800,
-                totalHours: 24,
-                usedHours: 8,
-                endDate: '2026-12-31',
+                date: '2026-05-10',
+                organization: '中国美院',
+                amount: 19600,
+                totalHours: 56,
+                usedHours: 14,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '编程课程学费',
-                originalAmount: 4800,
-                originalTotalHours: 24
+                note: '自然拼读',
+                originalAmount: 19600,
+                originalTotalHours: 56
             },
             {
                 id: 'p4',
-                date: '2026-02-15',
-                organization: '智慧教育',
-                amount: 5000,
-                totalHours: 25,
-                usedHours: 12,
-                endDate: '2026-12-31',
+                date: '2026-05-26',
+                organization: '青少年宫',
+                amount: 16000,
+                totalHours: 40,
+                usedHours: 3,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '数学提高班学费',
-                originalAmount: 5000,
-                originalTotalHours: 25
+                note: '游泳',
+                originalAmount: 16000,
+                originalTotalHours: 40
             },
             {
                 id: 'p5',
-                date: '2026-04-01',
-                organization: '音乐艺术中心',
-                amount: 3600,
-                totalHours: 18,
-                usedHours: 5,
-                endDate: '2026-12-31',
+                date: '2026-05-26',
+                organization: '青少年宫',
+                amount: 9600,
+                totalHours: 24,
+                usedHours: 2,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '小提琴课程学费',
-                originalAmount: 3600,
-                originalTotalHours: 18
+                note: '国画',
+                originalAmount: 9600,
+                originalTotalHours: 24
             },
             {
                 id: 'p6',
-                date: '2026-01-15',
-                organization: '编程学院',
-                amount: 6400,
-                totalHours: 32,
-                usedHours: 20,
-                endDate: '2026-12-31',
+                date: '2026-05-26',
+                organization: '青少年宫',
+                amount: 5250,
+                totalHours: 15,
+                usedHours: 0,
+                endDate: '2999-12-31',
                 status: 'active',
-                note: '高级编程课程学费',
-                originalAmount: 6400,
-                originalTotalHours: 32
+                note: '散打',
+                originalAmount: 5250,
+                originalTotalHours: 15
             }
         ]));
     }
@@ -4607,419 +4610,98 @@ function initData() {
         localStorage.setItem('courses', JSON.stringify([
             {
                 id: '1',
-                studentName: '学生A',
-                courseName: '数学一对一',
-                totalHours: 20,
-                usedHours: 5,
-                paymentId: 'p1',
-                schedule: {
-                    '3': { startTime: '10:00', endTime: '12:00' }
-                },
-                location: '教室A-101',
-                startDate: '2026-01-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '2',
-                studentName: '学生A',
-                courseName: '英语辅导',
-                totalHours: 15,
-                usedHours: 3,
-                paymentId: 'p1',
-                schedule: {
-                    '5': { startTime: '14:00', endTime: '16:00' }
-                },
-                location: '教室B-201',
-                startDate: '2026-01-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '3',
-                studentName: '学生B',
-                courseName: '钢琴课',
-                totalHours: 30,
-                usedHours: 10,
-                paymentId: 'p2',
-                schedule: {
-                    '1': { startTime: '10:00', endTime: '12:00' },
-                    '3': { startTime: '10:00', endTime: '12:00' }
-                },
-                location: '音乐教室',
-                startDate: '2026-01-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '4',
-                studentName: '学生C',
-                courseName: '编程入门',
-                totalHours: 24,
-                usedHours: 8,
-                paymentId: 'p3',
-                schedule: {
-                    '6': { startTime: '14:00', endTime: '15:30' }
-                },
-                location: '电脑室-301',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '5',
-                studentName: '学生D',
-                courseName: '数学提高班',
-                totalHours: 25,
-                usedHours: 12,
-                paymentId: 'p4',
-                schedule: {
-                    '0': { startTime: '14:00', endTime: '16:00' },
-                    '2': { startTime: '14:00', endTime: '16:00' },
-                    '4': { startTime: '14:00', endTime: '16:00' }
-                },
-                location: '教室A-102',
-                startDate: '2026-02-15',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '6',
-                studentName: '学生E',
-                courseName: '小提琴课',
-                totalHours: 18,
-                usedHours: 5,
-                paymentId: 'p5',
-                schedule: {
-                    '1': { startTime: '16:00', endTime: '18:00' },
-                    '3': { startTime: '16:00', endTime: '18:00' }
-                },
-                location: '音乐室-101',
-                startDate: '2026-04-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '7',
-                studentName: '学生F',
-                courseName: '高级编程',
-                totalHours: 32,
-                usedHours: 20,
-                paymentId: 'p6',
-                schedule: {
-                    '2': { startTime: '19:00', endTime: '21:00' },
-                    '4': { startTime: '19:00', endTime: '21:00' },
-                    '6': { startTime: '10:00', endTime: '12:00' }
-                },
-                location: '电脑室-301',
-                startDate: '2026-01-15',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '8',
-                studentName: '学生A',
-                courseName: '物理实验',
-                totalHours: 20,
-                usedHours: 8,
-                paymentId: 'p1',
-                schedule: {
-                    '1': { startTime: '08:00', endTime: '10:00' },
-                    '4': { startTime: '08:00', endTime: '10:00' }
-                },
-                location: '实验室-201',
-                startDate: '2026-02-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '9',
-                studentName: '学生B',
-                courseName: '声乐课',
-                totalHours: 16,
-                usedHours: 6,
-                paymentId: 'p2',
-                schedule: {
-                    '2': { startTime: '10:00', endTime: '12:00' },
-                    '5': { startTime: '10:00', endTime: '12:00' }
-                },
-                location: '音乐室-102',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            // 新增课程
-            {
-                id: '10',
-                studentName: '学生D',
-                courseName: '英语口语',
-                totalHours: 20,
-                usedHours: 8,
-                paymentId: 'p4',
-                schedule: {
-                    '1': { startTime: '14:00', endTime: '16:00' },
-                    '3': { startTime: '14:00', endTime: '16:00' }
-                },
-                location: '教室B-202',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '11',
-                studentName: '学生E',
-                courseName: '舞蹈课',
-                totalHours: 24,
-                usedHours: 10,
-                paymentId: 'p5',
-                schedule: {
-                    '0': { startTime: '10:00', endTime: '12:00' },
-                    '2': { startTime: '10:00', endTime: '12:00' },
-                    '4': { startTime: '10:00', endTime: '12:00' }
-                },
-                location: '舞蹈室-101',
-                startDate: '2026-04-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '12',
-                studentName: '学生F',
-                courseName: '围棋班',
-                totalHours: 18,
-                usedHours: 6,
-                paymentId: 'p6',
-                schedule: {
-                    '0': { startTime: '16:00', endTime: '18:00' },
-                    '3': { startTime: '16:00', endTime: '18:00' }
-                },
-                location: '活动室-101',
-                startDate: '2026-02-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '13',
-                studentName: '学生C',
-                courseName: '机器人编程',
-                totalHours: 30,
-                usedHours: 15,
-                paymentId: 'p3',
-                schedule: {
-                    '1': { startTime: '19:00', endTime: '21:00' },
-                    '4': { startTime: '19:00', endTime: '21:00' }
-                },
-                location: '电脑室-302',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '14',
-                studentName: '学生A',
-                courseName: '化学实验',
-                totalHours: 16,
-                usedHours: 4,
-                paymentId: 'p1',
-                schedule: {
-                    '2': { startTime: '08:00', endTime: '10:00' },
-                    '5': { startTime: '08:00', endTime: '10:00' }
-                },
-                location: '实验室-202',
-                startDate: '2026-04-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '15',
-                studentName: '学生B',
-                courseName: '素描课',
-                totalHours: 24,
-                usedHours: 12,
-                paymentId: 'p2',
-                schedule: {
-                    '4': { startTime: '16:00', endTime: '18:00' },
-                    '6': { startTime: '14:00', endTime: '16:00' }
-                },
-                location: '美术室-101',
-                startDate: '2026-02-15',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '16',
-                studentName: '学生D',
-                courseName: '书法课',
-                totalHours: 20,
-                usedHours: 8,
-                paymentId: 'p4',
-                schedule: {
-                    '6': { startTime: '08:00', endTime: '09:30' }
-                },
-                location: '活动室-102',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            // 周六早上重叠课程测试
-            {
-                id: '17',
-                studentName: '学生G',
-                courseName: '绘画班',
-                totalHours: 12,
-                usedHours: 4,
-                paymentId: 'p1',
-                schedule: {
-                    '5': { startTime: '08:15', endTime: '09:45' }
-                },
-                location: '美术室-102',
-                startDate: '2026-03-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '18',
-                studentName: '学生H',
-                courseName: '古筝课',
-                totalHours: 16,
-                usedHours: 6,
-                paymentId: 'p2',
-                schedule: {
-                    '5': { startTime: '08:30', endTime: '10:00' }
-                },
-                location: '音乐室-103',
-                startDate: '2026-04-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            // 其他不同时长课程
-            {
-                id: '19',
-                studentName: '学生A',
-                courseName: '阅读课',
-                totalHours: 20,
-                usedHours: 10,
-                paymentId: 'p1',
-                schedule: {
-                    '0': { startTime: '16:00', endTime: '17:30' },
-                    '3': { startTime: '10:00', endTime: '11:00' }
-                },
-                location: '阅览室-101',
-                startDate: '2026-02-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '20',
-                studentName: '学生B',
-                courseName: '陶艺课',
-                totalHours: 18,
-                usedHours: 8,
-                paymentId: 'p2',
-                schedule: {
-                    '2': { startTime: '14:30', endTime: '16:00' },
-                    '5': { startTime: '14:00', endTime: '15:30' }
-                },
-                location: '手工室-101',
-                startDate: '2026-03-15',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            // 不同时间开始结束的课程测试
-            {
-                id: '21',
-                studentName: '学生G',
-                courseName: '书法进阶',
-                totalHours: 20,
-                usedHours: 5,
-                paymentId: 'p3',
-                schedule: {
-                    '0': { startTime: '08:15', endTime: '09:45' },
-                    '3': { startTime: '08:15', endTime: '09:45' }
-                },
-                location: '活动室-103',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '22',
-                studentName: '学生H',
-                courseName: '围棋进阶',
-                totalHours: 24,
-                usedHours: 8,
-                paymentId: 'p4',
-                schedule: {
-                    '1': { startTime: '08:30', endTime: '10:15' },
-                    '4': { startTime: '08:30', endTime: '10:15' }
-                },
-                location: '活动室-104',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '23',
                 studentName: '学生E',
                 courseName: '绘画高级',
-                totalHours: 16,
-                usedHours: 4,
-                paymentId: 'p5',
+                totalHours: 56,
+                usedHours: 14,
+                paymentId: 'p1',
                 schedule: {
                     '2': { startTime: '08:45', endTime: '10:30' },
                     '5': { startTime: '08:45', endTime: '10:30' }
                 },
                 location: '美术室-103',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
+                startDate: '2026-05-10',
+                endDate: '2999-12-31',
                 status: 'active'
             },
             {
-                id: '24',
-                studentName: '学生F',
-                courseName: '舞蹈进阶',
-                totalHours: 30,
-                usedHours: 12,
-                paymentId: 'p6',
-                schedule: {
-                    '0': { startTime: '14:15', endTime: '16:00' },
-                    '3': { startTime: '14:15', endTime: '16:00' }
-                },
-                location: '舞蹈室-102',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '25',
-                studentName: '学生A',
-                courseName: '英语口语',
-                totalHours: 20,
-                usedHours: 6,
-                paymentId: 'p1',
-                schedule: {
-                    '1': { startTime: '16:30', endTime: '18:00' },
-                    '4': { startTime: '16:30', endTime: '18:00' }
-                },
-                location: '语言室-101',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
-                status: 'active'
-            },
-            {
-                id: '26',
-                studentName: '学生B',
-                courseName: '乐器合奏',
-                totalHours: 18,
-                usedHours: 9,
+                id: '2',
+                studentName: '学生E',
+                courseName: '绘画高级',
+                totalHours: 56,
+                usedHours: 14,
                 paymentId: 'p2',
                 schedule: {
-                    '3': { startTime: '19:15', endTime: '20:45' },
-                    '6': { startTime: '19:15', endTime: '20:45' }
+                    '2': { startTime: '11:00', endTime: '12:45' },
+                    '5': { startTime: '11:00', endTime: '12:45' }
                 },
-                location: '音乐室-104',
-                startDate: '2026-05-01',
-                endDate: '2026-12-31',
+                location: '美术室-103',
+                startDate: '2026-05-10',
+                endDate: '2999-12-31',
+                status: 'active'
+            },
+            {
+                id: '3',
+                studentName: '学生E',
+                courseName: '绘画高级',
+                totalHours: 56,
+                usedHours: 14,
+                paymentId: 'p3',
+                schedule: {
+                    '3': { startTime: '08:45', endTime: '10:30' },
+                    '6': { startTime: '08:45', endTime: '10:30' }
+                },
+                location: '美术室-103',
+                startDate: '2026-05-10',
+                endDate: '2999-12-31',
+                status: 'active'
+            },
+            {
+                id: '4',
+                studentName: '学生E',
+                courseName: '游泳',
+                totalHours: 40,
+                usedHours: 3,
+                paymentId: 'p4',
+                schedule: {
+                    '1': { startTime: '16:00', endTime: '17:15' },
+                    '4': { startTime: '16:00', endTime: '17:15' },
+                    '6': { startTime: '08:30', endTime: '09:45' }
+                },
+                location: '游泳馆',
+                startDate: '2026-05-26',
+                endDate: '2999-12-31',
+                status: 'active'
+            },
+            {
+                id: '5',
+                studentName: '学生E',
+                courseName: '国画',
+                totalHours: 24,
+                usedHours: 2,
+                paymentId: 'p5',
+                schedule: {
+                    '0': { startTime: '09:00', endTime: '10:30' },
+                    '3': { startTime: '09:00', endTime: '10:30' }
+                },
+                location: '国画室',
+                startDate: '2026-05-26',
+                endDate: '2999-12-31',
+                status: 'active'
+            },
+            {
+                id: '6',
+                studentName: '学生E',
+                courseName: '散打',
+                totalHours: 15,
+                usedHours: 0,
+                paymentId: 'p6',
+                schedule: {
+                    '2': { startTime: '15:00', endTime: '16:30' }
+                },
+                location: '散打馆',
+                startDate: '2026-05-26',
+                endDate: '2999-12-31',
                 status: 'active'
             }
         ]));
@@ -5027,36 +4709,39 @@ function initData() {
     
     if (!localStorage.getItem('attendance')) {
         localStorage.setItem('attendance', JSON.stringify([
-            // 学生A - 数学一对一 (周四)
-            { id: 'a1', courseId: '1', studentName: '学生A', courseName: '数学一对一', date: '2026-05-22', time: '09:15' },
-            { id: 'a2', courseId: '1', studentName: '学生A', courseName: '数学一对一', date: '2026-05-15', time: '09:05' },
-            { id: 'a3', courseId: '1', studentName: '学生A', courseName: '数学一对一', date: '2026-05-08', time: '09:10' },
-            // 学生A - 英语辅导 (周六)
-            { id: 'a4', courseId: '2', studentName: '学生A', courseName: '英语辅导', date: '2026-05-24', time: '14:05' },
-            { id: 'a5', courseId: '2', studentName: '学生A', courseName: '英语辅导', date: '2026-05-17', time: '14:10' },
-            // 学生A - 物理实验 (周二、周五)
-            { id: 'a6', courseId: '8', studentName: '学生A', courseName: '物理实验', date: '2026-05-21', time: '09:00' },
-            { id: 'a7', courseId: '8', studentName: '学生A', courseName: '物理实验', date: '2026-05-16', time: '09:05' },
-            // 学生B - 钢琴课 (周二、周四)
-            { id: 'a8', courseId: '3', studentName: '学生B', courseName: '钢琴课', date: '2026-05-20', time: '10:00' },
-            { id: 'a9', courseId: '3', studentName: '学生B', courseName: '钢琴课', date: '2026-05-14', time: '10:05' },
-            // 学生B - 声乐课 (周三、周六)
-            { id: 'a10', courseId: '9', studentName: '学生B', courseName: '声乐课', date: '2026-05-24', time: '10:00' },
-            { id: 'a11', courseId: '9', studentName: '学生B', courseName: '声乐课', date: '2026-05-21', time: '10:10' },
-            // 学生C - 编程入门 (周日)
-            { id: 'a12', courseId: '4', studentName: '学生C', courseName: '编程入门', date: '2026-05-18', time: '14:00' },
-            { id: 'a13', courseId: '4', studentName: '学生C', courseName: '编程入门', date: '2026-05-11', time: '14:05' },
-            // 学生D - 数学提高班 (周一、周三、周五)
-            { id: 'a14', courseId: '5', studentName: '学生D', courseName: '数学提高班', date: '2026-05-23', time: '14:00' },
-            { id: 'a15', courseId: '5', studentName: '学生D', courseName: '数学提高班', date: '2026-05-21', time: '14:05' },
-            { id: 'a16', courseId: '5', studentName: '学生D', courseName: '数学提高班', date: '2026-05-19', time: '14:00' },
-            // 学生E - 小提琴课 (周二、周四)
-            { id: 'a17', courseId: '6', studentName: '学生E', courseName: '小提琴课', date: '2026-05-20', time: '16:00' },
-            { id: 'a18', courseId: '6', studentName: '学生E', courseName: '小提琴课', date: '2026-05-16', time: '16:05' },
-            // 学生F - 高级编程 (周三、周五、周日)
-            { id: 'a19', courseId: '7', studentName: '学生F', courseName: '高级编程', date: '2026-05-22', time: '19:00' },
-            { id: 'a20', courseId: '7', studentName: '学生F', courseName: '高级编程', date: '2026-05-18', time: '10:00' },
-            { id: 'a21', courseId: '7', studentName: '学生F', courseName: '高级编程', date: '2026-05-15', time: '19:05' }
+            { id: 'a1', courseId: '1', studentName: '学生E', courseName: '绘画高级', date: '2026-05-17', time: '08:50' },
+            { id: 'a2', courseId: '1', studentName: '学生E', courseName: '绘画高级', date: '2026-05-21', time: '08:48' },
+            { id: 'a3', courseId: '2', studentName: '学生E', courseName: '绘画高级', date: '2026-05-17', time: '11:05' },
+            { id: 'a4', courseId: '2', studentName: '学生E', courseName: '绘画高级', date: '2026-05-21', time: '11:02' },
+            { id: 'a5', courseId: '3', studentName: '学生E', courseName: '绘画高级', date: '2026-05-16', time: '08:52' },
+            { id: 'a6', courseId: '3', studentName: '学生E', courseName: '绘画高级', date: '2026-05-18', time: '08:46' },
+            { id: 'a7', courseId: '4', studentName: '学生E', courseName: '游泳', date: '2026-05-27', time: '16:05' },
+            { id: 'a8', courseId: '4', studentName: '学生E', courseName: '游泳', date: '2026-05-28', time: '08:35' },
+            { id: 'a9', courseId: '5', studentName: '学生E', courseName: '国画', date: '2026-05-26', time: '09:05' },
+            { id: 'a10', courseId: '5', studentName: '学生E', courseName: '国画', date: '2026-05-29', time: '09:02' }
         ]));
     }
+}
+
+// 导出本地数据为JSON文件
+function exportLocalData() {
+    const data = {
+        students: JSON.parse(localStorage.getItem('students') || '[]'),
+        payments: JSON.parse(localStorage.getItem('payments') || '[]'),
+        courses: JSON.parse(localStorage.getItem('courses') || '[]'),
+        attendance: JSON.parse(localStorage.getItem('attendance') || '[]'),
+        leaveRecords: JSON.parse(localStorage.getItem('leaveRecords') || '[]')
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'course-management-data.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('数据导出成功！');
 }
