@@ -685,10 +685,17 @@ header h1 {
 
 .course-card-actions {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid #eee;
+}
+
+.course-card-actions .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
 }
 
 .stats-grid {
@@ -1299,13 +1306,15 @@ header h1 {
     
     .course-card-actions {
         flex-direction: row;
-        gap: 10px;
+        gap: 8px;
         justify-content: flex-start;
     }
     
     .course-card-actions .btn {
-        width: auto;
-        flex-shrink: 0;
+        flex: 1;
+        padding: 10px;
+        font-size: 14px;
+        font-weight: 500;
     }
     
     .stats-grid {
