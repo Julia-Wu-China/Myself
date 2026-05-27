@@ -449,7 +449,8 @@ header h1 {
 }
 
 .schedule-container {
-    overflow-x: auto;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .schedule-table {
@@ -1193,7 +1194,7 @@ header h1 {
     }
     
     .schedule-container {
-        overflow-x: auto;
+        overflow: auto;
         margin: 0 -15px;
         padding: 0 15px;
         -webkit-overflow-scrolling: touch;

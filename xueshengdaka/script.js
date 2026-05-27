@@ -410,37 +410,35 @@ function rotateSchedule() {
     const container = document.getElementById('scheduleContainer');
     const table = document.getElementById('allScheduleTable');
     if (!container || !table) return;
-    
+
     if (scheduleRotated) {
-        // 恢复原状
         table.style.transform = '';
+        table.style.transformOrigin = '';
+        table.style.position = '';
+        table.style.top = '';
+        table.style.left = '';
         table.style.width = '';
         table.style.height = '';
-        table.style.position = '';
-        container.style.overflowX = 'auto';
-        container.style.overflowY = '';
+        table.style.margin = '';
+        container.style.overflow = 'auto';
         container.style.height = '';
+        container.style.maxHeight = '';
     } else {
-        // 旋转90度并适配容器
-        const containerWidth = container.offsetWidth;
-        
-        // 课程表高度 = 容器宽度 - 5px
-        const targetHeight = containerWidth - 5;
         const tableWidth = table.offsetWidth;
-        
-        // 计算缩放比例
-        const scale = targetHeight / tableWidth;
-        
-        // 设置表格样式
-        table.style.transform = `rotate(90deg) scale(${scale})`;
-        table.style.transformOrigin = 'center center';
-        table.style.width = `${containerWidth}px`;
-        table.style.height = `${targetHeight}px`;
+        const tableHeight = table.offsetHeight;
+
+        table.style.transform = 'rotate(90deg) translate(0, -100%)';
+        table.style.transformOrigin = 'top left';
         table.style.position = 'relative';
-        
-        // 设置容器高度 = 课程表高度 + 5px
-        container.style.overflow = 'hidden';
-        container.style.height = `${targetHeight + 5}px`;
+        table.style.top = '0';
+        table.style.left = '0';
+        table.style.margin = '0';
+        table.style.width = `${tableHeight}px`;
+        table.style.height = `${tableWidth}px`;
+
+        container.style.overflow = 'auto';
+        container.style.maxHeight = `${Math.min(window.innerHeight * 0.75, tableWidth + 40)}px`;
+        container.style.height = container.style.maxHeight;
     }
     scheduleRotated = !scheduleRotated;
 }
@@ -1132,7 +1130,49 @@ function updatePayment() {
     }
     
     const remainingHours = totalHours - usedHours;
-    
+
+    // 如果原记录已有消费或原缴费日期不晚于今天，则保留历史：截断原记录到昨天并新建一条从今天生效的记录（不修改历史数据）
+    const originalPayment = payments[paymentIndex];
+    const todayStr = getToday();
+    const paymentDateNormalized = originalPayment.date || '';
+
+    if ((originalPayment.usedHours || 0) > 0 || (paymentDateNormalized && paymentDateNormalized <= todayStr)) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = formatDate(yesterday);
+
+        // 截断原记录（保留 usedHours 等历史字段）
+        payments[paymentIndex] = {
+            ...originalPayment,
+            endDate: yesterdayStr,
+            status: 'ended'
+        };
+
+        // 新建一条从今天生效的记录，未来使用此记录
+        const newPayment = {
+            id: generateId(),
+            date: todayStr,
+            organization,
+            amount,
+            totalHours,
+            usedHours: 0,
+            endDate,
+            status: 'active',
+            note,
+            originalAmount: amount,
+            originalTotalHours: totalHours
+        };
+
+        payments.push(newPayment);
+        savePayments(payments);
+        closeEditPaymentModal();
+        renderPaymentTable();
+        updatePaymentSelect();
+        alert('已保留历史记录并创建新的缴费记录用于之后的消费，历史数据未被改写。');
+        return;
+    }
+
+    // 否则直接更新原记录（未发生过消费且未生效）
     payments[paymentIndex] = {
         ...payments[paymentIndex],
         date,
@@ -1145,12 +1185,12 @@ function updatePayment() {
         // 如果原来是已结束状态，且剩余课时大于0，则恢复为使用中状态
         status: payments[paymentIndex].status === 'ended' && remainingHours > 0 ? 'active' : payments[paymentIndex].status
     };
-    
+
     savePayments(payments);
     closeEditPaymentModal();
     renderPaymentTable();
     updatePaymentSelect();
-    
+
     alert('缴费记录已更新');
 }
 
@@ -1483,6 +1523,18 @@ function editCourse(courseId) {
     document.getElementById('editClassLocation').value = course.location || '';
     document.getElementById('editStartDate').value = course.startDate;
     document.getElementById('editEndDate').value = course.endDate || '';
+
+    // 显示提示：如果课程已有历史或已开始，提醒用户历史数据不会被改写
+    try {
+        const warningEl = document.getElementById('editCourseWarning');
+        const todayStr = getToday();
+        const courseStarted = course.startDate && course.startDate <= todayStr;
+        if ((course.usedHours || 0) > 0 || courseStarted) {
+            if (warningEl) warningEl.style.display = 'block';
+        } else {
+            if (warningEl) warningEl.style.display = 'none';
+        }
+    } catch (e) {}
 
     // 设置星期复选框
     const checkboxes = document.querySelectorAll('#editWeekdayCheckboxes input');
@@ -2017,9 +2069,15 @@ function resetDetailFilters() {
     const statusSelect = document.getElementById('detailStatusFilter');
 
     if (studentSelect) studentSelect.value = '';
-    if (startInput) startInput.value = '';
-    if (endInput) endInput.value = '';
-    if (statusSelect) statusSelect.value = '';
+    // 日期默认：以今天为中心的前后一年
+    const today = new Date();
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    const oneYearLater = new Date(today);
+    oneYearLater.setFullYear(today.getFullYear() + 1);
+    if (startInput) startInput.value = formatDate(oneYearAgo);
+    if (endInput) endInput.value = formatDate(oneYearLater);
+    if (statusSelect) statusSelect.value = 'active';
 
     renderStudentCourses();
 }

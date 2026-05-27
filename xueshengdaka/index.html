@@ -453,14 +453,17 @@
             </div>
             <div class="modal-body">
                 <input type="hidden" id="editCourseId">
+                <div id="editCourseWarning" style="display:none;margin-bottom:10px;padding:10px;background:#fff3cd;border-radius:4px;color:#856404;font-weight:500;">
+                    编辑将不会修改历史数据；系统会为今天及之后创建一条新的课程记录。
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>学生名称</label>
-                        <input type="text" id="editStudentName" readonly style="background:#f5f5f5;color:#666;">
+                        <input type="text" id="editStudentName" readonly style="background:#f5f5f4;color:#666;">
                     </div>
                     <div class="form-group">
                         <label>课程名称</label>
-                        <input type="text" id="editCourseName" readonly style="background:#f5f5f5;color:#666;">
+                        <input type="text" id="editCourseName" readonly style="background:#f5f5f4;color:#666;">
                     </div>
                 </div>
                 <div class="form-row">
