@@ -779,13 +779,15 @@ function rotateSchedule() {
         container.style.overflow = '';
         container.style.height = '';
         container.style.maxHeight = '';
+        container.style.padding = '';
     } else {
-        const tableWidth = table.offsetWidth;
-        const tableHeight = table.offsetHeight;
+        const rect = table.getBoundingClientRect();
+        const tableWidth = rect.width;
+        const tableHeight = rect.height;
 
         table.style.transform = 'rotate(90deg) translate(0, -100%)';
         table.style.transformOrigin = 'top left';
-        table.style.position = 'relative';
+        table.style.position = 'absolute';
         table.style.top = '0';
         table.style.left = '0';
         table.style.margin = '0';
@@ -794,7 +796,10 @@ function rotateSchedule() {
 
         container.style.overflow = 'visible';
         container.style.maxHeight = 'none';
-        container.style.height = `${tableWidth + 5}px`;
+        container.style.height = `${tableWidth}px`;
+        container.style.padding = '0';
+        container.style.margin = '0';
+        container.style.position = 'relative';
     }
     scheduleRotated = !scheduleRotated;
 }

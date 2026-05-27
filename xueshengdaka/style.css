@@ -1391,18 +1391,18 @@ header h1 {
     
     /* 课程录入页面表单样式 */
     .course-form label {
-        font-size: 10px;
+        font-size: 12px;
     }
     
     .course-form input,
     .course-form select,
     .course-form textarea {
-        font-size: 10px;
+        font-size: 12px;
         padding: 8px;
     }
     
     .course-form .form-group {
-        font-size: 10px;
+        font-size: 12px;
     }
 }
 
