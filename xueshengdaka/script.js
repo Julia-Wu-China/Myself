@@ -1636,6 +1636,16 @@ function renderStudentSelector() {
         nameSpan.onclick = () => selectStudent(student);
         tag.appendChild(nameSpan);
         
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '✎';
+        editBtn.title = '修改名字';
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editStudentName(student);
+        };
+        tag.appendChild(editBtn);
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '×';
@@ -1794,6 +1804,79 @@ function addStudent() {
     renderStudentSelector();
     
     alert('学生添加成功');
+}
+
+// 修改学生名字
+function editStudentName(oldName) {
+    const newName = prompt(`请输入新的学生名字`, oldName);
+    
+    if (!newName || newName.trim() === '') {
+        alert('名字不能为空');
+        return;
+    }
+    
+    if (newName.trim() === oldName) {
+        return;
+    }
+    
+    const students = getStudents();
+    if (students.includes(newName.trim())) {
+        alert('该名字已存在');
+        return;
+    }
+    
+    const index = students.indexOf(oldName);
+    if (index !== -1) {
+        students[index] = newName.trim();
+        saveStudents(students);
+        
+        if (currentStudent === oldName) {
+            currentStudent = newName.trim();
+        }
+        
+        updateAllReferences(oldName, newName.trim());
+        renderStudentSelector();
+        alert('名字修改成功');
+    }
+}
+
+// 更新所有引用的学生名字
+function updateAllReferences(oldName, newName) {
+    // 更新缴费记录中的学生名字
+    const payments = getPayments();
+    payments.forEach(p => {
+        if (p.studentName === oldName) {
+            p.studentName = newName;
+        }
+    });
+    savePayments(payments);
+    
+    // 更新课程中的学生名字
+    const courses = getCourses();
+    courses.forEach(c => {
+        if (c.studentName === oldName) {
+            c.studentName = newName;
+        }
+    });
+    saveCourses(courses);
+    
+    // 更新签到记录中的学生名字
+    const attendance = getAttendance();
+    attendance.forEach(a => {
+        if (a.studentName === oldName) {
+            a.studentName = newName;
+        }
+    });
+    saveAttendance(attendance);
+    
+    // 更新请假记录中的学生名字
+    const leaveRecords = getLeaveRecords();
+    leaveRecords.forEach(l => {
+        if (l.studentName === oldName) {
+            l.studentName = newName;
+        }
+    });
+    saveLeaveRecords(leaveRecords);
 }
 
 // 删除学生
