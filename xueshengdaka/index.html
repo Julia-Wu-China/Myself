@@ -87,7 +87,7 @@
         <div class="section">
             <div class="section-title">课程录入</div>
             <form id="courseForm">
-                <div class="form-row">
+                <div class="form-row two-column-row">
                     <div class="form-group">
                         <label>学生姓名</label>
                         <select id="studentName" required>
@@ -98,6 +98,8 @@
                         <label>课程名称</label>
                         <input type="text" id="courseName" placeholder="如：数学一对一" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label>课时数量 <span style="color:#999;font-weight:normal;">(不填视为无限)</span></label>
                         <input type="number" id="totalHours" min="0" placeholder="请输入课时数，不填视为无限">
@@ -176,7 +178,7 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row two-column-row">
                     <div class="form-group">
                         <label>课程开始日期 <span style="color:#999;font-weight:normal;">(选填，默认今天)</span></label>
                         <input type="date" id="startDate">
@@ -545,7 +547,7 @@
                     </div>
                 </div>
 
-                <div class="form-row">
+                <div class="form-row two-column-row">
                     <div class="form-group">
                         <label>课程开始日期 <span style="color:#999;font-weight:normal;">(选填)</span></label>
                         <input type="date" id="editStartDate">

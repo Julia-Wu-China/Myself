@@ -1141,6 +1141,10 @@ header h1 {
         grid-template-columns: 1fr;
         gap: 12px;
     }
+    .form-row.two-column-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
     
     .form-group input,
     .form-group select,
@@ -1375,6 +1379,9 @@ header h1 {
         flex-direction: unset !important;
         align-items: unset !important;
     }
+    .form-row.two-column-row {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
     
     .filter-bar input,
     .filter-bar select {
@@ -1414,6 +1421,9 @@ header h1 {
 @media (max-width: 768px) {
     .form-row {
         grid-template-columns: 1fr;
+    }
+    .form-row.two-column-row {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .btn-group {
