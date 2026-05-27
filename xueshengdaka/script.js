@@ -224,6 +224,30 @@ function formatDate(date) {
     return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
 }
 
+function getCourseEffectiveEndDate(course) {
+    if (course.splitDate) {
+        return course.splitDate;
+    }
+    return course.endDate || '2999-12-31';
+}
+
+function courseHasHistoricalRecords(course) {
+    const todayStr = getToday();
+    if ((course.usedHours || 0) > 0) return true;
+
+    const attendance = getAttendance();
+    if (attendance.some(a => a.courseId === course.id && a.date < todayStr)) {
+        return true;
+    }
+
+    const leaveRecords = getLeaveRecords();
+    if (leaveRecords.some(l => l.courseId === course.id && l.date < todayStr)) {
+        return true;
+    }
+
+    return false;
+}
+
 // 获取日期天数前
 function getDateDaysAgo(days) {
     const now = new Date();
@@ -1524,15 +1548,12 @@ function editCourse(courseId) {
     document.getElementById('editStartDate').value = course.startDate;
     document.getElementById('editEndDate').value = course.endDate || '';
 
-    // 显示提示：如果课程已有历史或已开始，提醒用户历史数据不会被改写
+    // 显示提示：如果课程已有实际历史记录，提醒用户历史数据不会被改写
     try {
         const warningEl = document.getElementById('editCourseWarning');
-        const todayStr = getToday();
-        const courseStarted = course.startDate && course.startDate <= todayStr;
-        if ((course.usedHours || 0) > 0 || courseStarted) {
-            if (warningEl) warningEl.style.display = 'block';
-        } else {
-            if (warningEl) warningEl.style.display = 'none';
+        const hasHistory = courseHasHistoricalRecords(course);
+        if (warningEl) {
+            warningEl.style.display = hasHistory ? 'block' : 'none';
         }
     } catch (e) {}
 
@@ -1570,6 +1591,9 @@ function updateCourse() {
     const editPaymentId = document.getElementById('editPaymentId').value;
     const editPaymentIds = editPaymentId ? editPaymentId.split(',').filter(id => id.trim()) : [];
     
+    // 获取今天的日期字符串
+    const todayStr = getToday();
+    
     const checkboxes = document.querySelectorAll('#editWeekdayCheckboxes input:checked');
     const weekdays = Array.from(checkboxes).map(input => input.value);
     
@@ -1592,6 +1616,94 @@ function updateCourse() {
     
     const schedule = getWeekdayTimeData('editWeekdayTimePanel', weekdays);
     
+    const hasHistory = courseHasHistoricalRecords(course);
+
+    if (hasHistory) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = formatDate(yesterday);
+
+        // 保留历史数据，不修改原课程的开始/结束信息，只设置 splitDate 表示从今天起不再生效
+        courses[courseIndex] = {
+            ...course,
+            splitDate: yesterdayStr,
+            status: 'ended'
+        };
+
+        // 计算新课程的开始日期：从今天之后的第一个上课日开始
+        const today = new Date();
+        let scheduleDays = [];
+        
+        // 处理 schedule 可能是对象或数组的情况
+        if (Array.isArray(schedule)) {
+            scheduleDays = schedule.filter(s => s && s.day !== undefined).map(s => parseInt(s.day));
+        } else if (schedule && typeof schedule === 'object') {
+            // 如果是对象，提取所有 day 属性
+            Object.keys(schedule).forEach(key => {
+                const day = parseInt(key);
+                if (!isNaN(day)) {
+                    scheduleDays.push(day);
+                }
+            });
+        }
+        
+        // 如果没有找到上课日，使用原课程的上课日
+        if (scheduleDays.length === 0 && course.schedule) {
+            if (Array.isArray(course.schedule)) {
+                scheduleDays = course.schedule.filter(s => s && s.day !== undefined).map(s => parseInt(s.day));
+            } else if (course.schedule && typeof course.schedule === 'object') {
+                Object.keys(course.schedule).forEach(key => {
+                    const day = parseInt(key);
+                    if (!isNaN(day)) {
+                        scheduleDays.push(day);
+                    }
+                });
+            }
+        }
+        
+        // 找到今天之后的第一个上课日
+        let nextClassDay = null;
+        for (let i = 0; i < 7; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() + i);
+            const dayOfWeek = checkDate.getDay(); // 0=周日, 1=周一, ..., 6=周六
+            if (i > 0 && scheduleDays.includes(dayOfWeek)) {
+                nextClassDay = checkDate;
+                break;
+            }
+        }
+        
+        // 如果没有找到（不应该发生），使用今天作为默认值
+        const newStartDate = nextClassDay ? formatDate(nextClassDay) : todayStr;
+
+        const newCourse = {
+            id: generateId(),
+            studentName: course.studentName,
+            courseName,
+            totalHours,
+            usedHours: 0,
+            paymentId: editPaymentIds.length > 0 ? editPaymentIds.join(',') : '',
+            schedule,
+            location,
+            startDate: newStartDate,
+            endDate,
+            status: 'active',
+            originCourseId: course.id
+        };
+
+        if (totalHours !== Infinity && totalHours === 0) {
+            newCourse.status = 'ended';
+        }
+
+        courses.push(newCourse);
+        saveCourses(courses);
+        closeEditCourseModal();
+        renderAllSchedule();
+        renderStudentCourses();
+        alert('历史数据已保留，新的课程记录将从下次上课日起生效。');
+        return;
+    }
+
     const updatedCourse = {
         ...course,
         courseName,
@@ -1621,8 +1733,11 @@ function updateCourse() {
     }
 }
 
-function deleteCourse() {
-    const courseId = document.getElementById('editCourseId').value;
+function deleteCourse(courseId) {
+    // 如果没有传入 courseId，则从表单获取
+    if (!courseId) {
+        courseId = document.getElementById('editCourseId').value;
+    }
     
     const courses = getCourses();
     const course = courses.find(c => c.id === courseId);
@@ -1681,6 +1796,8 @@ function endCourse() {
     if (courseIndex === -1) return;
     
     courses[courseIndex].status = 'ended';
+    // 设置结束日期为今天，这样课表就不会显示该课程未来的上课时间
+    courses[courseIndex].endDate = new Date().toISOString().split('T')[0];
     saveCourses(courses);
     
     closeEndCourseModal();
@@ -1690,12 +1807,70 @@ function endCourse() {
     alert('课程已结束');
 }
 
+// 恢复课程（重新激活已结束的课程）
+function reactivateCourse(courseId) {
+    const courses = getCourses();
+    const courseIndex = courses.findIndex(c => c.id === courseId);
+    
+    if (courseIndex === -1) return;
+    
+    courses[courseIndex].status = 'active';
+    // 清除之前设置的结束日期，让课程恢复正常
+    delete courses[courseIndex].splitDate;
+    
+    saveCourses(courses);
+    renderAllSchedule();
+    renderStudentCourses();
+    
+    alert('课程已恢复为使用中状态');
+}
+
 // 渲染全员总课表
+function resetSchedule() {
+    // 设置学生筛选为全部学生
+    document.getElementById('scheduleStudentFilter').value = '';
+    
+    // 设置日期为今天所在的这一周
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=周日, 1=周一, ..., 6=周六
+    
+    // 计算周一的日期
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+    
+    // 计算周日的日期
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    // 设置日期格式为 YYYY-MM-DD
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    document.getElementById('scheduleStartDate').value = formatDate(monday);
+    document.getElementById('scheduleEndDate').value = formatDate(sunday);
+    
+    // 重新渲染课表
+    renderAllSchedule();
+}
+
 function renderAllSchedule() {
     const filterStudent = document.getElementById('scheduleStudentFilter').value;
     const scheduleStartDate = document.getElementById('scheduleStartDate').value;
     const scheduleEndDate = document.getElementById('scheduleEndDate').value;
     let courses = getCourses();
+    
+    // 去重：按课程ID去重，避免重复渲染
+    const seen = new Set();
+    courses = courses.filter(c => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+    });
     
     if (filterStudent) {
         courses = courses.filter(c => c.studentName === filterStudent);
@@ -1706,7 +1881,16 @@ function renderAllSchedule() {
             // 标准化日期格式（支持 2026-05-01 和 2026/05/01）
             const normalizeDate = (d) => d ? d.replace(/\//g, '-') : '';
             const courseStart = normalizeDate(course.startDate);
-            const courseEnd = normalizeDate(course.endDate) || '2999-12-31';
+            
+            // 使用中状态的课程，结束日期默认为无限远（2999-12-31）
+            // 只有已结束的课程才使用实际的结束日期
+            let courseEnd;
+            if (course.status === 'ended') {
+                courseEnd = normalizeDate(getCourseEffectiveEndDate(course)) || '2999-12-31';
+            } else {
+                courseEnd = normalizeDate(course.endDate) || '2999-12-31';
+            }
+            
             const filterStart = normalizeDate(scheduleStartDate);
             const filterEnd = normalizeDate(scheduleEndDate);
             
@@ -1737,10 +1921,16 @@ function renderAllSchedule() {
     }
     
     // 计算每个单元格的最大重叠课程数
+    const overlapChecked = new Set(); // 用于去重
     courses.forEach(course => {
         for (let day = 0; day < 7; day++) {
             const daySchedule = getDaySchedule(course, day);
             if (!daySchedule) continue;
+            
+            // 去重：同一课程同一天只计算一次
+            const key = `${course.id}-${day}`;
+            if (overlapChecked.has(key)) continue;
+            overlapChecked.add(key);
             
             const courseStart = daySchedule.startTime;
             const courseEnd = daySchedule.endTime;
@@ -1775,11 +1965,43 @@ function renderAllSchedule() {
     
     // 收集所有课程片段（按天分组）
     const dayCourses = [];
+    const addedCourses = new Set(); // 用于去重
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     for (let day = 0; day < 7; day++) {
         dayCourses[day] = [];
         courses.forEach(course => {
             const daySchedule = getDaySchedule(course, day);
             if (!daySchedule) return;
+            
+            // 计算当前周某天的日期
+            const weekStart = scheduleStartDate ? new Date(scheduleStartDate) : new Date();
+            const todayOfWeek = new Date(weekStart);
+            todayOfWeek.setDate(weekStart.getDate() + day);
+            todayOfWeek.setHours(0, 0, 0, 0);
+            
+            // 检查课程是否应该在当前周的某天显示（考虑 splitDate）
+            if (course.splitDate) {
+                // 对于有 splitDate 的已结束课程，只显示到 splitDate（包含 splitDate 当天）
+                const splitDate = new Date(course.splitDate);
+                splitDate.setHours(0, 0, 0, 0);
+                if (todayOfWeek > splitDate) {
+                    return; // 旧课程在 splitDate 之后不显示
+                }
+            } else if (course.status === 'ended') {
+                // 没有 splitDate 的已结束课程
+                // 已经发生过的课程（todayOfWeek <= today）应该显示
+                // 只有还没发生的课程（todayOfWeek > today）且课程已结束，才不显示
+                if (todayOfWeek > today) {
+                    return; // 课程已结束且还未发生，不显示
+                }
+            }
+            
+            // 去重：同一课程同一天只添加一次
+            const key = `${course.id}-${day}`;
+            if (addedCourses.has(key)) return;
+            addedCourses.add(key);
             
             const courseStart = daySchedule.startTime;
             const courseEnd = daySchedule.endTime;
@@ -1958,16 +2180,51 @@ function renderAllSchedule() {
 
 // 渲染学生课程详情
 function renderStudentCourses() {
-    const filterStudent = document.getElementById('detailStudentFilter').value;
-    const detailStartDate = document.getElementById('detailStartDate').value;
-    const detailEndDate = document.getElementById('detailEndDate').value;
-    const filterStatus = document.getElementById('detailStatusFilter').value;
+    const filterStudent = document.getElementById('detailStudentFilter')?.value || '';
+    const filterCourse = document.getElementById('detailCourseFilter')?.value || '';
+    const filterDay = document.getElementById('detailDayFilter')?.value || '';
+    const detailStartDate = document.getElementById('detailStartDate')?.value || '';
+    const detailEndDate = document.getElementById('detailEndDate')?.value || '';
+    const filterStatus = document.getElementById('detailStatusFilter')?.value || '';
     
     let courses = getCourses();
     const payments = getPayments();
     
     if (filterStudent) {
         courses = courses.filter(c => c.studentName === filterStudent);
+    }
+    
+    if (filterCourse) {
+        courses = courses.filter(c => c.courseName === filterCourse);
+    }
+    
+    // 周几筛选：如果课程在该周几有上课安排，就筛选出来
+    if (filterDay) {
+        // HTML中选项值是 1=周一, 2=周二, ..., 0=周日
+        // 但内部索引是 0=周一, 1=周二, ..., 6=周日
+        let dayNum = parseInt(filterDay);
+        if (dayNum === 0) {
+            dayNum = 6; // 周日 -> 索引6
+        } else {
+            dayNum = dayNum - 1; // 周一(1)->0, 周二(2)->1, ..., 周六(6)->5
+        }
+        
+        courses = courses.filter(course => {
+            const schedule = course.schedule;
+            if (!schedule) return false;
+            
+            // 检查schedule是否包含该周几的安排
+            if (Array.isArray(schedule)) {
+                return schedule.some(s => s && parseInt(s.day) === dayNum);
+            } else if (typeof schedule === 'object') {
+                // schedule是对象格式，key是周几索引(0-6)或中文星期名称
+                if (schedule[dayNum] !== undefined) return true;
+                // 也检查中文星期名称
+                const weekdayName = WEEKDAY_NAMES[dayNum];
+                return schedule[weekdayName] !== undefined;
+            }
+            return false;
+        });
     }
     
     if (filterStatus) {
@@ -1977,7 +2234,7 @@ function renderStudentCourses() {
     if (detailStartDate || detailEndDate) {
         courses = courses.filter(course => {
             const courseStart = course.startDate;
-            const courseEnd = course.endDate || '2999-12-31';
+            const courseEnd = getCourseEffectiveEndDate(course);
             
             let isValid = true;
             if (detailStartDate && courseEnd < detailStartDate) {
@@ -2053,6 +2310,8 @@ function renderStudentCourses() {
                 <div class="course-card-actions">
                     <button class="btn btn-secondary" onclick="editCourse('${course.id}')">编辑</button>
                     ${course.status === 'active' ? `<button class="btn btn-danger" style="background:#dc3545;color:white" onclick="showEndCourseModal('${course.id}')">结束</button>` : ''}
+                    ${course.status === 'ended' ? `<button class="btn btn-success" style="background:#28a745;color:white" onclick="reactivateCourse('${course.id}')">恢复</button>` : ''}
+                    ${course.status === 'ended' && (course.usedHours || 0) === 0 ? `<button class="btn btn-danger" style="background:#dc3545;color:white" onclick="deleteCourse('${course.id}')">删除</button>` : ''}
                 </div>
             </div>
         `;
@@ -2061,14 +2320,85 @@ function renderStudentCourses() {
     container.innerHTML = html;
 }
 
+// 更新课程筛选下拉框选项（与学生联动）
+function updateCourseFilterOptions() {
+    const studentSelect = document.getElementById('detailStudentFilter');
+    const courseSelect = document.getElementById('detailCourseFilter');
+    const selectedCourse = courseSelect.value;
+    
+    const selectedStudent = studentSelect.value;
+    const courses = getCourses();
+    
+    // 根据选中的学生过滤课程
+    let filteredCourses = courses;
+    if (selectedStudent) {
+        filteredCourses = courses.filter(c => c.studentName === selectedStudent);
+    }
+    
+    // 获取不重复的课程名称
+    const courseNames = [...new Set(filteredCourses.map(c => c.courseName))].sort();
+    
+    // 更新课程下拉框
+    courseSelect.innerHTML = '<option value="">全部课程</option>';
+    courseNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        // 如果之前选中了某个课程，保持选中状态
+        if (name === selectedCourse) {
+            option.selected = true;
+        }
+        courseSelect.appendChild(option);
+    });
+}
+
+// 更新学生筛选下拉框选项（与课程联动）
+function updateStudentFilterOptions() {
+    const studentSelect = document.getElementById('detailStudentFilter');
+    const courseSelect = document.getElementById('detailCourseFilter');
+    const selectedStudent = studentSelect.value;
+    
+    const selectedCourse = courseSelect.value;
+    const courses = getCourses();
+    
+    // 根据选中的课程过滤学生
+    let filteredCourses = courses;
+    if (selectedCourse) {
+        filteredCourses = courses.filter(c => c.courseName === selectedCourse);
+    }
+    
+    // 获取不重复的学生名称
+    const studentNames = [...new Set(filteredCourses.map(c => c.studentName))].sort();
+    
+    // 更新学生下拉框
+    studentSelect.innerHTML = '<option value="">全部学生</option>';
+    studentNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        // 如果之前选中了某个学生，保持选中状态
+        if (name === selectedStudent) {
+            option.selected = true;
+        }
+        studentSelect.appendChild(option);
+    });
+}
+
 // 清空“学生课程详情”筛选条件并刷新
 function resetDetailFilters() {
     const studentSelect = document.getElementById('detailStudentFilter');
+    const courseSelect = document.getElementById('detailCourseFilter');
+    const daySelect = document.getElementById('detailDayFilter');
     const startInput = document.getElementById('detailStartDate');
     const endInput = document.getElementById('detailEndDate');
     const statusSelect = document.getElementById('detailStatusFilter');
 
     if (studentSelect) studentSelect.value = '';
+    // 重置课程筛选并重新加载选项
+    updateCourseFilterOptions();
+    if (courseSelect) courseSelect.value = '';
+    // 重置周几筛选
+    if (daySelect) daySelect.value = '';
     // 日期默认：以今天为中心的前后一年
     const today = new Date();
     const oneYearAgo = new Date(today);
@@ -2087,6 +2417,7 @@ function resetStatsFilters() {
     document.getElementById('statsStudentFilter').value = '';
     document.getElementById('statsOrgFilter').value = '';
     document.getElementById('statsCourseFilter').value = '';
+    document.getElementById('statsPeriodFilter').value = '';
     
     // 设置默认日期：一年前到一年后
     const today = new Date();
@@ -2110,6 +2441,7 @@ function renderStats() {
     const filterStudent = document.getElementById('statsStudentFilter')?.value || '';
     const filterOrg = document.getElementById('statsOrgFilter')?.value || '';
     const filterCourse = document.getElementById('statsCourseFilter')?.value || '';
+    const filterPeriod = document.getElementById('statsPeriodFilter')?.value || '';
     const startDate = document.getElementById('statsStartDate')?.value || '';
     const endDate = document.getElementById('statsEndDate')?.value || '';
     
@@ -2142,10 +2474,57 @@ function renderStats() {
         filteredPayments = filteredPayments.filter(p => coursePayments.includes(p.id));
     }
     
+    // 时段筛选：上午(0:00-12:00)、下午(12:00-18:00)、晚上(18:00-24:00)
+    if (filterPeriod) {
+        filteredCourses = filteredCourses.filter(course => {
+            const schedule = course.schedule;
+            if (!schedule) return false;
+            
+            // 获取课程的开始时间
+            let startTime = null;
+            
+            if (Array.isArray(schedule)) {
+                for (const s of schedule) {
+                    if (s && s.startTime) {
+                        startTime = s.startTime;
+                        break;
+                    }
+                }
+            } else if (typeof schedule === 'object') {
+                for (const key of Object.keys(schedule)) {
+                    const s = schedule[key];
+                    if (s && s.startTime) {
+                        startTime = s.startTime;
+                        break;
+                    }
+                }
+            }
+            
+            if (!startTime) return false;
+            
+            const timeParts = startTime.split(':');
+            const hour = parseInt(timeParts[0]);
+            
+            switch (filterPeriod) {
+                case 'morning': // 上午(0:00-12:00)
+                    return hour >= 0 && hour < 12;
+                case 'afternoon': // 下午(12:00-18:00)
+                    return hour >= 12 && hour < 18;
+                case 'evening': // 晚上(18:00-24:00)
+                    return hour >= 18 && hour < 24;
+                default:
+                    return true;
+            }
+        });
+        
+        const periodCourses = filteredCourses.map(c => c.paymentId);
+        filteredPayments = filteredPayments.filter(p => periodCourses.includes(p.id));
+    }
+    
     if (startDate || endDate) {
         filteredCourses = filteredCourses.filter(course => {
             const courseStart = course.startDate;
-            const courseEnd = course.endDate || '2999-12-31';
+            const courseEnd = getCourseEffectiveEndDate(course);
             
             let isValid = true;
             if (startDate && courseEnd < startDate) {
@@ -2252,7 +2631,7 @@ function renderStats() {
         const remainingHours = (payment.totalHours || 0) - (payment.usedHours || 0);
         if (remainingHours <= 0) return;
         
-        const courseEnd = course.endDate || '2999-12-31';
+        const courseEnd = getCourseEffectiveEndDate(course);
         if (courseEnd < remainingStart) return;
         
         let addedCount = 0;
@@ -2404,7 +2783,7 @@ function renderAttendance() {
         if (!daySchedule) return false;
         
         const courseStart = course.startDate;
-        const courseEnd = course.endDate || '2999-12-31';
+        const courseEnd = getCourseEffectiveEndDate(course);
         
         if (courseStart > today || courseEnd < today) return false;
         
@@ -2498,10 +2877,11 @@ function getMissedAttendance() {
         if (course.status !== 'active') return;
         
         const courseStart = course.startDate;
-        const courseEnd = course.endDate || '2999-12-31';
+        const courseEnd = getCourseEffectiveEndDate(course);
         
         // 只考虑课程开始日期 <= 今天的课程
         if (courseStart > today) return;
+        if (courseEnd < today) return;
         
         // 获取课程的所有上课星期
         const weekdays = Object.keys(course.schedule);
@@ -2701,7 +3081,7 @@ function getNextClassDate(course, fromDate) {
     let searchDate = new Date(fromDateObj);
     searchDate.setDate(searchDate.getDate() + 1);
     
-    const courseEnd = course.endDate || '2999-12-31';
+    const courseEnd = getCourseEffectiveEndDate(course);
     
     // 最多找 30 天
     for (let i = 0; i < 30; i++) {
@@ -2960,7 +3340,7 @@ function renderStatsDetail(type) {
     if (startDate || endDate) {
         filteredCourses = filteredCourses.filter(course => {
             const courseStart = course.startDate;
-            const courseEnd = course.endDate || '2999-12-31';
+            const courseEnd = getCourseEffectiveEndDate(course);
             
             let isValid = true;
             if (startDate && courseEnd < startDate) {
@@ -3126,7 +3506,7 @@ function renderStatsDetail(type) {
             if (remainingHours <= 0) return;
             
             const courseStart = course.startDate;
-            const courseEnd = course.endDate || '2999-12-31';
+            const courseEnd = getCourseEffectiveEndDate(course);
             
             // 只显示未来的课程（在筛选范围内）
             if (courseEnd < remainingStart) return;
@@ -3694,6 +4074,7 @@ function init() {
     updatePaymentSelect();
     updateScheduleStudentFilter();
     updateDetailStudentFilter();
+    updateCourseFilterOptions();
     updateStatsStudentFilter();
     
     document.getElementById('startDate').value = getToday();
@@ -3762,7 +4143,7 @@ function fixIncorrectUsedHours() {
 
 // 初始化数据
 function initData() {
-    const dataVersion = 'v11';
+    const dataVersion = 'v12';
     const currentVersion = localStorage.getItem('dataVersion');
     
     // 如果是第一次使用或数据版本不同，进行增量更新

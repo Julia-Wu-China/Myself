@@ -925,29 +925,64 @@ header h1 {
     padding: 8px 12px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 10px;
 }
 
 .filter-bar select {
     padding: 8px 12px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 10px;
+}
+
+.filter-bar .btn {
+    padding: 8px 24px;
+    background: #f0f0f0;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    color: #666;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.filter-bar .btn:hover {
+    background: #e8e8e8;
 }
 
 .filter-row {
     display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-wrap: nowrap;
     margin-bottom: 15px;
     align-items: center;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+/* 手机版：一行显示2个筛选器 */
+@media (max-width: 768px) {
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        overflow-x: visible;
+        padding-bottom: 0;
+    }
+    
+    .filter-row .filter-select,
+    .filter-row .filter-date,
+    .filter-row .btn {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 .filter-row .filter-select {
     padding: 8px 12px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 10px;
     min-width: 140px;
 }
 
@@ -955,7 +990,7 @@ header h1 {
     padding: 8px 12px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
-    font-size: 14px;
+    font-size: 10px;
 }
 
 .filter-row .btn {
@@ -964,7 +999,7 @@ header h1 {
     border: 2px solid #e0e0e0;
     border-radius: 6px;
     color: #666;
-    font-size: 14px;
+    font-size: 10px;
     cursor: pointer;
     transition: all 0.3s;
 }

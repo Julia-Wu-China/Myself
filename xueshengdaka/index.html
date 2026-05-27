@@ -210,6 +210,7 @@
                 <button class="btn btn-secondary" onclick="renderAllSchedule()">查询</button>
                 <button class="btn btn-secondary" onclick="prevWeek()">上周</button>
                 <button class="btn btn-secondary" onclick="nextWeek()">下周</button>
+                <button class="btn btn-secondary" onclick="resetSchedule()">重置</button>
                 <button class="btn btn-secondary rotate-btn" onclick="rotateSchedule()" title="旋转查看">↻</button>
             </div>
             <div class="schedule-container" id="scheduleContainer">
@@ -239,11 +240,24 @@
         <div class="section">
             <div class="section-title">学生课程详情</div>
             <div class="filter-bar">
-                <select id="detailStudentFilter" onchange="renderStudentCourses()">
+                <select id="detailStudentFilter" onchange="updateCourseFilterOptions();renderStudentCourses()">
                     <option value="">全部学生</option>
+                </select>
+                <select id="detailCourseFilter" onchange="updateStudentFilterOptions();renderStudentCourses()">
+                    <option value="">全部课程</option>
                 </select>
                 <input type="date" id="detailStartDate" value="2026-02-25">
                 <input type="date" id="detailEndDate" value="2026-05-25">
+                <select id="detailDayFilter" onchange="renderStudentCourses()">
+                    <option value="">全部时间</option>
+                    <option value="1">周一</option>
+                    <option value="2">周二</option>
+                    <option value="3">周三</option>
+                    <option value="4">周四</option>
+                    <option value="5">周五</option>
+                    <option value="6">周六</option>
+                    <option value="0">周日</option>
+                </select>
                 <select id="detailStatusFilter" onchange="renderStudentCourses()">
                     <option value="">全部状态</option>
                     <option value="active" selected>进行中</option>
@@ -273,6 +287,12 @@
                 </select>
                 <select id="statsCourseFilter" class="filter-select">
                     <option value="">全部课程</option>
+                </select>
+                <select id="statsPeriodFilter" class="filter-select">
+                    <option value="">全部时段</option>
+                    <option value="morning">上午(0:00-12:00)</option>
+                    <option value="afternoon">下午(12:00-18:00)</option>
+                    <option value="evening">晚上(18:00-24:00)</option>
                 </select>
                 <input type="date" id="statsStartDate" class="filter-date">
                 <input type="date" id="statsEndDate" class="filter-date">
