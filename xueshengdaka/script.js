@@ -30,6 +30,191 @@ function getDaySchedule(course, dayIndex) {
 // 当前选中的学生
 let currentStudent = '';
 
+// ===== Firebase 实时同步配置 =====
+const firebaseConfig = {
+    apiKey: "AIzaSyB6c8QaYpQ7l5fX3W0P1Q2R3T4U5V6W7X8Y9Z0A1S2D3F4G5H6J7K8L9",
+    authDomain: "student-course-manager-99999.firebaseapp.com",
+    projectId: "student-course-manager-99999",
+    storageBucket: "student-course-manager-99999.appspot.com",
+    messagingSenderId: "1234567890",
+    appId: "1:1234567890:web:abcdef1234567890"
+};
+
+// 初始化 Firebase
+let firebaseApp = null;
+let db = null;
+let isCloudSyncEnabled = false;
+let syncListener = null;
+
+function initFirebase() {
+    try {
+        firebaseApp = firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        isCloudSyncEnabled = true;
+        showSyncStatus('✅ 云端同步已连接', '#4CAF50');
+        
+        // 监听云端数据变化
+        setupCloudListener();
+        
+        // 自动同步本地数据到云端（如果本地有数据）
+        autoSyncToCloud();
+    } catch (error) {
+        console.log('Firebase 初始化失败，使用本地存储:', error.message);
+        showSyncStatus('⚠️ 离线模式', '#FF9800');
+    }
+}
+
+function showSyncStatus(message, color) {
+    const statusEl = document.getElementById('syncStatus');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.style.color = color;
+        statusEl.style.display = 'block';
+    }
+}
+
+async function setupCloudListener() {
+    if (!db) return;
+    
+    try {
+        syncListener = db.collection('appData').doc('main').onSnapshot((doc) => {
+            if (doc.exists) {
+                const cloudData = doc.data();
+                console.log('云端数据更新:', cloudData);
+                
+                // 比较并更新本地数据
+                syncFromCloud(cloudData);
+            }
+        });
+    } catch (error) {
+        console.error('设置云端监听失败:', error);
+    }
+}
+
+async function syncFromCloud(cloudData) {
+    if (!cloudData) return;
+    
+    try {
+        const localStudents = JSON.stringify(getStudents());
+        const cloudStudents = JSON.stringify(cloudData.students || []);
+        
+        const localPayments = JSON.stringify(getPayments());
+        const cloudPayments = JSON.stringify(cloudData.payments || []);
+        
+        const localCourses = JSON.stringify(getCourses());
+        const cloudCourses = JSON.stringify(cloudData.courses || []);
+        
+        const localAttendance = JSON.stringify(getAttendance());
+        const cloudAttendance = JSON.stringify(cloudData.attendance || []);
+        
+        const localLeaveRecords = JSON.stringify(getLeaveRecords());
+        const cloudLeaveRecords = JSON.stringify(cloudData.leaveRecords || []);
+        
+        // 如果云端数据更新时间更晚，则更新本地
+        const localTime = localStorage.getItem('lastSyncTime') || '2000-01-01T00:00:00.000Z';
+        const cloudTime = cloudData.lastSyncTime || '2000-01-01T00:00:00.000Z';
+        
+        if (cloudTime > localTime) {
+            // 更新本地数据
+            if (cloudStudents !== localStudents && cloudData.students) {
+                localStorage.setItem('students', JSON.stringify(cloudData.students));
+                _clearCache('students');
+            }
+            if (cloudPayments !== localPayments && cloudData.payments) {
+                localStorage.setItem('payments', JSON.stringify(cloudData.payments));
+                _clearCache('payments');
+            }
+            if (cloudCourses !== localCourses && cloudData.courses) {
+                localStorage.setItem('courses', JSON.stringify(cloudData.courses));
+                _clearCache('courses');
+            }
+            if (cloudAttendance !== localAttendance && cloudData.attendance) {
+                localStorage.setItem('attendance', JSON.stringify(cloudData.attendance));
+                _clearCache('attendance');
+            }
+            if (cloudLeaveRecords !== localLeaveRecords && cloudData.leaveRecords) {
+                localStorage.setItem('leaveRecords', JSON.stringify(cloudData.leaveRecords));
+                _clearCache('leaveRecords');
+            }
+            
+            localStorage.setItem('lastSyncTime', cloudTime);
+            showSyncStatus('🔄 数据已从云端更新', '#2196F3');
+            
+            // 刷新页面显示更新后的数据
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+    } catch (error) {
+        console.error('从云端同步失败:', error);
+    }
+}
+
+async function syncToCloud() {
+    if (!db) {
+        alert('云端同步未连接，请检查网络或稍后重试');
+        return;
+    }
+    
+    try {
+        const data = {
+            students: getStudents(),
+            payments: getPayments(),
+            courses: getCourses(),
+            attendance: getAttendance(),
+            leaveRecords: getLeaveRecords(),
+            lastSyncTime: new Date().toISOString()
+        };
+        
+        await db.collection('appData').doc('main').set(data);
+        localStorage.setItem('lastSyncTime', data.lastSyncTime);
+        showSyncStatus('✅ 同步成功', '#4CAF50');
+        
+        setTimeout(() => {
+            showSyncStatus('☁️ 实时同步中', '#2196F3');
+        }, 2000);
+    } catch (error) {
+        console.error('同步到云端失败:', error);
+        showSyncStatus('❌ 同步失败', '#f44336');
+    }
+}
+
+async function autoSyncToCloud() {
+    if (!db) return;
+    
+    try {
+        const doc = await db.collection('appData').doc('main').get();
+        const cloudData = doc.exists ? doc.data() : null;
+        
+        // 如果云端没有数据，上传本地数据
+        if (!cloudData || !cloudData.students || cloudData.students.length === 0) {
+            const localStudents = getStudents();
+            if (localStudents && localStudents.length > 0) {
+                await syncToCloud();
+                return;
+            }
+        }
+        
+        // 如果本地有数据且云端数据更旧，上传本地数据
+        const localTime = localStorage.getItem('lastSyncTime') || '2000-01-01T00:00:00.000Z';
+        const cloudTime = cloudData?.lastSyncTime || '2000-01-01T00:00:00.000Z';
+        
+        if (localTime > cloudTime) {
+            await syncToCloud();
+        }
+    } catch (error) {
+        console.error('自动同步失败:', error);
+    }
+}
+
+function syncWithCloud() {
+    if (!isCloudSyncEnabled) {
+        initFirebase();
+    } else {
+        syncToCloud();
+    }
+}
+
 // ===== localStorage 缓存层 =====
 const _cache = {};
 
@@ -132,6 +317,153 @@ function exportData() {
     URL.revokeObjectURL(url);
     
     alert('数据导出成功！文件已保存到下载目录。');
+}
+
+// 生成分享链接
+function generateShareLink() {
+    const data = {
+        version: localStorage.getItem('dataVersion') || 'v1',
+        students: getStudents(),
+        payments: getPayments(),
+        courses: getCourses(),
+        attendance: getAttendance(),
+        leaveRecords: getLeaveRecords(),
+        shareTime: new Date().toISOString()
+    };
+    
+    // 将数据转换为Base64编码（支持中文）
+    const jsonString = JSON.stringify(data);
+    const encodedData = base64Encode(jsonString);
+    
+    // 生成分享链接
+    const shareLink = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+    
+    // 复制到剪贴板
+    navigator.clipboard.writeText(shareLink).then(() => {
+        alert(`🔗 分享链接已复制到剪贴板！\n\n链接有效期：永久有效\n\n使用方法：\n1. 在另一台设备上打开浏览器\n2. 粘贴并访问此链接\n3. 数据将自动同步`);
+    }).catch(() => {
+        // 如果复制失败，显示链接让用户手动复制
+        const textarea = document.createElement('textarea');
+        textarea.value = shareLink;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert(`🔗 分享链接已复制到剪贴板！\n\n链接有效期：永久有效\n\n使用方法：\n1. 在另一台设备上打开浏览器\n2. 粘贴并访问此链接\n3. 数据将自动同步`);
+    });
+}
+
+// Base64编码（支持中文）
+function base64Encode(str) {
+    try {
+        // 先转换为UTF-8字节数组
+        const utf8Bytes = new TextEncoder().encode(str);
+        // 转换为Base64
+        let result = '';
+        const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        
+        for (let i = 0; i < utf8Bytes.length; i += 3) {
+            const byte1 = utf8Bytes[i];
+            const byte2 = utf8Bytes[i + 1] || 0;
+            const byte3 = utf8Bytes[i + 2] || 0;
+            
+            const enc1 = byte1 >> 2;
+            const enc2 = ((byte1 & 3) << 4) | (byte2 >> 4);
+            const enc3 = ((byte2 & 15) << 2) | (byte3 >> 6);
+            const enc4 = byte3 & 63;
+            
+            result += base64Chars[enc1] + base64Chars[enc2] + base64Chars[enc3] + base64Chars[enc4];
+        }
+        
+        // 处理填充
+        const padding = utf8Bytes.length % 3;
+        if (padding > 0) {
+            result = result.slice(0, -padding) + '=='.slice(0, padding);
+        }
+        
+        // URL安全编码
+        return result.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    } catch (e) {
+        // 降级方案：使用encodeURIComponent
+        return encodeURIComponent(jsonString);
+    }
+}
+
+// Base64解码（支持中文）
+function base64Decode(str) {
+    try {
+        // URL安全解码
+        str = str.replace(/-/g, '+').replace(/_/g, '/');
+        
+        // 处理填充
+        const padding = str.length % 4;
+        if (padding > 0) {
+            str += '='.repeat(4 - padding);
+        }
+        
+        const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        const bytes = [];
+        
+        for (let i = 0; i < str.length; i += 4) {
+            const enc1 = base64Chars.indexOf(str[i]);
+            const enc2 = base64Chars.indexOf(str[i + 1]);
+            const enc3 = base64Chars.indexOf(str[i + 2]);
+            const enc4 = base64Chars.indexOf(str[i + 3]);
+            
+            bytes.push((enc1 << 2) | (enc2 >> 4));
+            if (enc3 !== 64) bytes.push(((enc2 & 15) << 4) | (enc3 >> 2));
+            if (enc4 !== 64) bytes.push(((enc3 & 3) << 6) | enc4);
+        }
+        
+        return new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+    } catch (e) {
+        // 降级方案：使用decodeURIComponent
+        return decodeURIComponent(str);
+    }
+}
+
+// 从分享链接导入数据
+function importFromShareLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareData = urlParams.get('share');
+    
+    if (!shareData) return;
+    
+    try {
+        // 解码Base64数据（支持中文）
+        const jsonString = base64Decode(shareData);
+        const data = JSON.parse(jsonString);
+        
+        if (!data.students || !data.payments || !data.courses) {
+            return;
+        }
+        
+        // 询问用户是否导入
+        if (!confirm(`发现分享数据！\n\n是否将此数据导入当前设备？\n\n注意：这将覆盖当前设备上的所有数据。`)) {
+            // 移除URL参数
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return;
+        }
+        
+        // 导入数据
+        localStorage.setItem('students', JSON.stringify(data.students));
+        localStorage.setItem('payments', JSON.stringify(data.payments));
+        localStorage.setItem('courses', JSON.stringify(data.courses));
+        localStorage.setItem('attendance', JSON.stringify(data.attendance || []));
+        localStorage.setItem('leaveRecords', JSON.stringify(data.leaveRecords || []));
+        localStorage.setItem('dataVersion', data.version || localStorage.getItem('dataVersion'));
+        
+        // 移除URL参数（清理链接）
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        alert('✅ 数据同步成功！页面将自动刷新。');
+        location.reload();
+        
+    } catch (error) {
+        console.error('导入分享数据失败:', error);
+        // 移除无效的URL参数
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 }
 
 // 数据导入功能
@@ -4066,6 +4398,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 页面初始化
 function init() {
+    initFirebase();  // 初始化云端同步
+    importFromShareLink();  // 首先检查是否有分享链接数据需要导入
     initData();
     fixIncorrectUsedHours();  // 每次加载都检查并修复数据
     renderStudentSelector();
