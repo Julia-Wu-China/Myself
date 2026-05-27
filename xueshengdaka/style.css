@@ -376,7 +376,7 @@ header h1 {
 .payment-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 12px;
     margin-top: 10px;
 }
 
@@ -1298,12 +1298,14 @@ header h1 {
     }
     
     .course-card-actions {
-        flex-direction: column;
-        gap: 8px;
+        flex-direction: row;
+        gap: 10px;
+        justify-content: flex-start;
     }
     
     .course-card-actions .btn {
-        width: 100%;
+        width: auto;
+        flex-shrink: 0;
     }
     
     .stats-grid {
@@ -1385,6 +1387,22 @@ header h1 {
     .payment-table .actions .btn {
         padding: 6px 10px;
         font-size: 12px;
+    }
+    
+    /* 课程录入页面表单样式 */
+    .course-form label {
+        font-size: 10px;
+    }
+    
+    .course-form input,
+    .course-form select,
+    .course-form textarea {
+        font-size: 10px;
+        padding: 8px;
+    }
+    
+    .course-form .form-group {
+        font-size: 10px;
     }
 }
 
