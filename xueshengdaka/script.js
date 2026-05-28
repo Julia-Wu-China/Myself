@@ -790,9 +790,24 @@ function rotateSchedule() {
         container.style.margin = '';
         container.style.position = '';
         container.style.width = '';
-        // 恢复th的minWidth
+        // 恢复th的minWidth和width
         const ths = table.querySelectorAll('th');
-        ths.forEach(th => { th.style.minWidth = ''; });
+        ths.forEach(th => {
+            th.style.minWidth = '';
+            th.style.width = '';
+            th.style.maxWidth = '';
+        });
+        // 恢复tbody tr和td的height和width
+        const tbodyRows = table.querySelectorAll('tbody tr');
+        tbodyRows.forEach(row => {
+            row.style.height = '';
+            const tds = row.querySelectorAll('td');
+            tds.forEach(td => {
+                td.style.width = '';
+                td.style.minWidth = '';
+                td.style.maxWidth = '';
+            });
+        });
         if (section) {
             section.style.height = '';
             section.style.overflow = '';
@@ -802,8 +817,13 @@ function rotateSchedule() {
     } else {
         const isMobile = window.innerWidth <= 768;
 
-        // 获取容器可用宽度
-        const containerWidth = section ? section.clientWidth - 40 : container.clientWidth;
+        // 获取容器可用宽度（section内容宽度减去padding）
+        const sectionStyles = section ? window.getComputedStyle(section) : null;
+        const sectionPaddingLeft = sectionStyles ? parseFloat(sectionStyles.paddingLeft) : 0;
+        const sectionPaddingRight = sectionStyles ? parseFloat(sectionStyles.paddingRight) : 0;
+        const containerWidth = section
+            ? section.clientWidth - sectionPaddingLeft - sectionPaddingRight
+            : container.clientWidth;
         const targetHeight = containerWidth - 10; // 两边各留5px
 
         // 计算原表格行数
@@ -820,7 +840,7 @@ function rotateSchedule() {
         table.style.width = 'auto';
         table.style.height = 'auto';
 
-        container.style.overflowX = 'hidden';
+        container.style.overflowX = isMobile ? 'auto' : 'hidden';
         container.style.overflowY = 'hidden';
         container.style.maxHeight = 'none';
         container.style.padding = '0';
@@ -828,9 +848,9 @@ function rotateSchedule() {
         container.style.position = 'relative';
         container.style.width = 'auto';
 
-        // 转置后列宽：手机端时间列60px，周一~周日120px；桌面端时间列80px，周一~周日200px
+        // 转置后列宽：桌面端时间列80px，周一~周日200px；手机端时间列60px，周一~周日100px
         const baseWidths = isMobile
-            ? [60, 120, 120, 120, 120, 120, 120, 120]
+            ? [60, 100, 100, 100, 100, 100, 100, 100]
             : [80, 200, 200, 200, 200, 200, 200, 200];
 
         const ths = table.querySelectorAll('thead th');

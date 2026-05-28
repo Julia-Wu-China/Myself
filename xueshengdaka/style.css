@@ -1350,8 +1350,8 @@ header h1 {
     }
     
     .schedule-table th {
-        min-width: 80px;
-        width: 80px;
+        min-width: 100px;
+        width: 100px;
     }
     
     .schedule-table .time-slot {
