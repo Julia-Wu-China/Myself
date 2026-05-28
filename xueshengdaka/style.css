@@ -71,7 +71,7 @@ header h1 {
 
 .header-actions .btn {
     padding: 6px 12px;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 .nav-tabs {
@@ -1272,6 +1272,9 @@ header h1 {
         flex: 1;
         width: 50% !important;
         margin: 0;
+        font-size: 11px;
+        padding: 8px 4px !important;
+        white-space: nowrap;
     }
     
     .section {
