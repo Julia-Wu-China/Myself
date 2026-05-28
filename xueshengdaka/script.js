@@ -194,6 +194,46 @@ async function autoSyncToCloud() {
     }
 }
 
+async function downloadFromCloud() {
+    if (!isCloudSyncEnabled) {
+        initFirebase();
+        return;
+    }
+
+    try {
+        showSyncStatus('🔄 正在从云端下载...', '#FF9800');
+
+        const doc = await db.collection('appData').doc('main').get();
+        if (doc.exists) {
+            await syncFromCloud(doc.data());
+            showSyncStatus('✅ 同步下载完成', '#4CAF50');
+        } else {
+            showSyncStatus('⚠️ 云端暂无数据', '#FF9800');
+        }
+    } catch (error) {
+        console.error('同步下载失败:', error);
+        showSyncStatus('❌ 同步下载失败', '#F44336');
+    }
+}
+
+async function uploadToCloud() {
+    if (!isCloudSyncEnabled) {
+        initFirebase();
+        return;
+    }
+
+    try {
+        showSyncStatus('🔄 正在上传到云端...', '#FF9800');
+
+        await syncToCloud();
+
+        showSyncStatus('✅ 同步上传完成', '#4CAF50');
+    } catch (error) {
+        console.error('同步上传失败:', error);
+        showSyncStatus('❌ 同步上传失败', '#F44336');
+    }
+}
+
 async function syncWithCloud() {
     if (!isCloudSyncEnabled) {
         initFirebase();
