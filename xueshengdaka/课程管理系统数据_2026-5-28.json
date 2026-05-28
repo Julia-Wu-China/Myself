@@ -1,0 +1,784 @@
+{
+  "version": "v13",
+  "students": [
+    "花花",
+    "磊磊"
+  ],
+  "payments": [
+    {
+      "usedHours": 0,
+      "date": "2026-05-26",
+      "amount": 1169.6,
+      "endDate": "2999-12-31",
+      "status": "active",
+      "originalTotalHours": 17,
+      "organization": "网上家教（逆商教育）",
+      "originalAmount": 1169.6,
+      "totalHours": 17,
+      "id": "mpmgdea8uuuyt6hcml",
+      "note": "语文/英语"
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 1960,
+      "usedHours": 4,
+      "date": "2026-05-17",
+      "id": "mpmgwjxdy1jiqu0vbb",
+      "note": "自然拼读",
+      "totalHours": 14,
+      "organization": "中铁5楼-刘老师",
+      "originalAmount": 1960,
+      "originalTotalHours": 14
+    },
+    {
+      "endDate": "2999-12-31",
+      "status": "active",
+      "usedHours": 2,
+      "date": "2026-05-17",
+      "amount": 1960,
+      "totalHours": 14,
+      "note": "英文绘本",
+      "id": "mpmgx5h9l8277x959q",
+      "originalTotalHours": 14,
+      "originalAmount": 1960,
+      "organization": "中铁5楼-刘老师"
+    },
+    {
+      "organization": "艺多多",
+      "originalAmount": 1200,
+      "originalTotalHours": 15,
+      "note": "画画写字",
+      "id": "mpmh0jmpmv5sftd92r",
+      "totalHours": 15,
+      "amount": 1200,
+      "date": "2026-05-26",
+      "usedHours": 0,
+      "status": "active",
+      "endDate": "2999-12-31"
+    },
+    {
+      "amount": 2380,
+      "usedHours": 0,
+      "date": "2026-05-26",
+      "status": "active",
+      "endDate": "2999-12-31",
+      "organization": "派格学堂",
+      "originalAmount": 2380,
+      "originalTotalHours": 14,
+      "id": "mpmhe3s50r4og4l7hy4o",
+      "note": "口才课",
+      "totalHours": 14
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 600,
+      "date": "2026-05-26",
+      "usedHours": 6,
+      "note": "游泳",
+      "id": "mpmhfldhp746qcuv14l",
+      "totalHours": 20,
+      "organization": "高境少体校",
+      "originalAmount": 600,
+      "originalTotalHours": 20
+    },
+    {
+      "originalTotalHours": 20,
+      "originalAmount": 1000,
+      "organization": "鹿尚轮滑",
+      "totalHours": 16,
+      "id": "mpmhgp29dceoplnzbzu",
+      "note": "轮滑",
+      "usedHours": 0,
+      "date": "2026-05-26",
+      "amount": 800,
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "originalTotalHours": 5,
+      "organization": "派格学堂",
+      "originalAmount": 1,
+      "totalHours": 5,
+      "id": "mpmhjzprtfjmls2obpl",
+      "note": "趣味英语",
+      "usedHours": 0,
+      "date": "2026-05-26",
+      "amount": 1,
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "amount": 600,
+      "date": "2026-05-26",
+      "usedHours": 0,
+      "status": "active",
+      "endDate": "2026-07-05",
+      "organization": "xfiveDance",
+      "originalAmount": 600,
+      "originalTotalHours": 8,
+      "id": "mpmhlnsxviykanwq9u",
+      "note": "街舞",
+      "totalHours": 8
+    },
+    {
+      "id": "mpmhn39crg9cjic3mee",
+      "note": "轮滑",
+      "totalHours": 4,
+      "organization": "小马溜溜（沪太路抖音）",
+      "originalAmount": 99,
+      "originalTotalHours": 4,
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 99,
+      "usedHours": 0,
+      "date": "2026-05-26"
+    },
+    {
+      "amount": 89,
+      "date": "2026-05-26",
+      "usedHours": 0,
+      "status": "active",
+      "endDate": "2999-12-31",
+      "originalAmount": 89,
+      "organization": "棒棒贝贝创智中心",
+      "originalTotalHours": 3,
+      "note": "思维启蒙",
+      "id": "mpmhnk1utdjb1dyfw9",
+      "totalHours": 3
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 69,
+      "usedHours": 0,
+      "date": "2026-05-26",
+      "note": "抖音",
+      "id": "mpmhoh1cyhsl18l39l",
+      "totalHours": 5,
+      "originalAmount": 69,
+      "organization": "赵汝飞写字",
+      "originalTotalHours": 5
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 96,
+      "date": "2026-05-26",
+      "usedHours": 0,
+      "id": "mpmhp3gyut99h8ybggd",
+      "note": "抖音",
+      "totalHours": 2,
+      "originalAmount": 96,
+      "organization": "榴星小将运动成长中心",
+      "originalTotalHours": 2
+    },
+    {
+      "originalTotalHours": 10,
+      "organization": "合力游泳-周教练",
+      "originalAmount": 1800,
+      "totalHours": 10,
+      "id": "mpmi0d0ka8mowh5vuxg",
+      "note": "一对一",
+      "date": "2026-05-26",
+      "usedHours": 0,
+      "amount": 1800,
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "id": "mpmi17oivtlznumol7g",
+      "note": "长训班",
+      "totalHours": 24,
+      "organization": "合力游泳-周教练",
+      "originalAmount": 2560,
+      "originalTotalHours": 24,
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 2560,
+      "usedHours": 2,
+      "date": "2026-05-26"
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 850,
+      "date": "2026-04-12",
+      "usedHours": 7,
+      "note": "围棋网课",
+      "id": "mpmi3sv6sorqfzny20q",
+      "totalHours": 10,
+      "originalAmount": 850,
+      "organization": "棋逢佳人",
+      "originalTotalHours": 10
+    },
+    {
+      "originalTotalHours": 48,
+      "originalAmount": 5760,
+      "organization": "中铁5楼-周老师",
+      "totalHours": 48,
+      "id": "mpmi6pjr6q29vzauogg",
+      "note": "围棋线下",
+      "usedHours": 0,
+      "date": "2025-06-01",
+      "amount": 5760,
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "status": "active",
+      "endDate": "2999-12-31",
+      "amount": 3500,
+      "date": "2026-04-12",
+      "usedHours": 13,
+      "id": "mpmi8vgamldqea5d9jr",
+      "note": "一周2节（正课+习题）一周350",
+      "totalHours": 20,
+      "organization": "奥数-老庄",
+      "originalAmount": 3500,
+      "originalTotalHours": 20
+    }
+  ],
+  "courses": [
+    {
+      "startDate": "2026-05-17",
+      "location": "中铁5楼",
+      "schedule": {
+        "2": {
+          "endTime": "18:30",
+          "startTime": "16:30"
+        },
+        "5": {
+          "endTime": "18:00",
+          "startTime": "16:00"
+        }
+      },
+      "totalHours": null,
+      "courseName": "英语自然拼读",
+      "id": "mpmizaglt7thkve54lc",
+      "studentName": "花花",
+      "usedHours": 4,
+      "paymentId": "mpmgwjxdy1jiqu0vbb",
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "startDate": "2026-05-17",
+      "location": "中铁5楼",
+      "schedule": {
+        "1": {
+          "startTime": "15:30",
+          "endTime": "17:30"
+        }
+      },
+      "totalHours": null,
+      "id": "mpmj4hiwkfkey00cogj",
+      "courseName": "英文绘本阅读",
+      "studentName": "花花",
+      "usedHours": 2,
+      "paymentId": "mpmgx5h9l8277x959q",
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "totalHours": null,
+      "id": "mpmjgqulzfz55t1d2o",
+      "courseName": "少体校游泳",
+      "startDate": "2026-05-06",
+      "schedule": {
+        "0": {
+          "startTime": "16:00",
+          "endTime": "16:45"
+        },
+        "3": {
+          "endTime": "16:45",
+          "startTime": "16:00"
+        }
+      },
+      "location": "高境游泳馆",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "usedHours": 6,
+      "studentName": "花花",
+      "paymentId": "mpmhfldhp746qcuv14l"
+    },
+    {
+      "studentName": "花花",
+      "usedHours": 0,
+      "paymentId": "mpmh0jmpmv5sftd92r",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "startDate": "2026-05-26",
+      "location": "中铁5楼",
+      "schedule": {
+        "4": {
+          "endTime": "18:15",
+          "startTime": "16:45"
+        }
+      },
+      "totalHours": null,
+      "id": "mpmn6nfzc6zrd9ez3l",
+      "courseName": "画画"
+    },
+    {
+      "totalHours": null,
+      "courseName": "派格口才",
+      "id": "mpmn8u4lmhfa1qwiu6",
+      "startDate": "2026-05-26",
+      "schedule": {
+        "5": {
+          "endTime": "10:30",
+          "startTime": "09:00"
+        }
+      },
+      "location": "万达金街2楼",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "usedHours": 0,
+      "studentName": "花花",
+      "paymentId": "mpmhe3s50r4og4l7hy4o"
+    },
+    {
+      "startDate": "2026-05-26",
+      "location": "红太阳广场2楼",
+      "schedule": {
+        "5": {
+          "startTime": "11:00",
+          "endTime": "12:00"
+        }
+      },
+      "totalHours": null,
+      "id": "mpmnaeu1r14ch0z69i",
+      "courseName": "轮滑",
+      "studentName": "花花",
+      "usedHours": 0,
+      "paymentId": "mpmhgp29dceoplnzbzu",
+      "endDate": "2999-12-31",
+      "status": "active"
+    },
+    {
+      "usedHours": 0,
+      "studentName": "花花",
+      "paymentId": "mpmhlnsxviykanwq9u",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "startDate": "2026-05-26",
+      "schedule": {
+        "6": {
+          "endTime": "15:00",
+          "startTime": "14:00"
+        }
+      },
+      "location": "万达1号楼11楼",
+      "totalHours": 8,
+      "id": "mpmniirbjovt9n9v3e",
+      "courseName": "街舞"
+    },
+    {
+      "id": "mpmnpqsph0t3a5sdjx6",
+      "courseName": "思维启蒙",
+      "totalHours": 3,
+      "location": "万渡汇3楼",
+      "schedule": {
+        "6": {
+          "startTime": "08:50",
+          "endTime": "10:20"
+        }
+      },
+      "startDate": "2026-05-26",
+      "status": "active",
+      "endDate": "2999-12-31",
+      "paymentId": "mpmhnk1utdjb1dyfw9",
+      "studentName": "花花",
+      "usedHours": 0
+    },
+    {
+      "id": "mpmo0la9o3kiw8fg25",
+      "courseName": "奥数-老庄",
+      "totalHours": null,
+      "schedule": {
+        "2": {
+          "startTime": "18:30",
+          "endTime": "21:00"
+        },
+        "5": {
+          "startTime": "10:15",
+          "endTime": "11:30"
+        }
+      },
+      "location": "网课",
+      "startDate": "2026-04-14",
+      "status": "active",
+      "endDate": "2999-12-31",
+      "paymentId": "mpmi8vgamldqea5d9jr",
+      "usedHours": 13,
+      "studentName": "磊磊"
+    },
+    {
+      "studentName": "磊磊",
+      "usedHours": 7,
+      "paymentId": "mpmi3sv6sorqfzny20q",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "startDate": "2026-04-09",
+      "location": "线上网课",
+      "schedule": {
+        "2": {
+          "endTime": "22:00",
+          "startTime": "21:00"
+        }
+      },
+      "totalHours": null,
+      "id": "mpmokuzmg69itcg35zf",
+      "courseName": "线上围棋"
+    },
+    {
+      "totalHours": null,
+      "courseName": "语文",
+      "id": "mpmoou7vsbr8wboviua",
+      "startDate": "2026-05-26",
+      "schedule": {
+        "4": {
+          "endTime": "21:00",
+          "startTime": "20:00"
+        }
+      },
+      "location": "线上网课",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "usedHours": 0,
+      "studentName": "磊磊",
+      "paymentId": "mpmgdea8uuuyt6hcml"
+    },
+    {
+      "endDate": "2999-12-31",
+      "status": "active",
+      "usedHours": 0,
+      "studentName": "磊磊",
+      "paymentId": "mpmgdea8uuuyt6hcml",
+      "totalHours": null,
+      "id": "mpmor23ub02l0m4dfuh",
+      "courseName": "英语",
+      "startDate": "2026-05-26",
+      "schedule": {
+        "5": {
+          "startTime": "13:30",
+          "endTime": "14:30"
+        }
+      },
+      "location": "线上网课"
+    },
+    {
+      "usedHours": 2,
+      "studentName": "磊磊",
+      "paymentId": "mpmi17oivtlznumol7g",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "startDate": "2026-05-16",
+      "schedule": {
+        "5": {
+          "startTime": "17:00",
+          "endTime": "18:00"
+        }
+      },
+      "location": "合力游泳馆",
+      "totalHours": null,
+      "id": "mpmotkuf65wvm5arxdu",
+      "courseName": "游泳长训班"
+    },
+    {
+      "usedHours": 0,
+      "studentName": "磊磊",
+      "paymentId": "mpmi6pjr6q29vzauogg",
+      "endDate": "2999-12-31",
+      "status": "active",
+      "startDate": "2026-05-26",
+      "schedule": {
+        "5": {
+          "startTime": "15:00",
+          "endTime": "16:30"
+        }
+      },
+      "location": "中铁5楼",
+      "totalHours": null,
+      "courseName": "中铁围棋",
+      "id": "mpmovbwdnz9vchhu75f"
+    }
+  ],
+  "attendance": [
+    {
+      "date": "2026-05-23",
+      "courseId": "mpmizaglt7thkve54lc",
+      "studentName": "花花",
+      "time": "补签",
+      "courseName": "英语自然拼读",
+      "id": "mpmj12y6dv3mqw7x5u4"
+    },
+    {
+      "id": "mpmj4xfh95mha2oi9io",
+      "courseName": "英文绘本阅读",
+      "studentName": "花花",
+      "time": "补签",
+      "courseId": "mpmj4hiwkfkey00cogj",
+      "date": "2026-05-19"
+    },
+    {
+      "id": "mpmj740oi7qmf9oji08",
+      "courseName": "英语自然拼读",
+      "time": "补签",
+      "studentName": "花花",
+      "courseId": "mpmizaglt7thkve54lc",
+      "date": "2026-05-20"
+    },
+    {
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "studentName": "花花",
+      "time": "补签",
+      "date": "2026-05-25",
+      "courseName": "少体校游泳",
+      "id": "mpmjh2gn98yshdak5l9"
+    },
+    {
+      "id": "mpmjh98evmdzld73rr",
+      "courseName": "少体校游泳",
+      "date": "2026-05-07",
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "studentName": "花花",
+      "time": "补签"
+    },
+    {
+      "courseName": "少体校游泳",
+      "id": "mpmjhcdee5mq3dthhp",
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "studentName": "花花",
+      "time": "补签",
+      "date": "2026-05-14"
+    },
+    {
+      "date": "2026-05-18",
+      "studentName": "花花",
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "time": "补签",
+      "courseName": "少体校游泳",
+      "id": "mpmjhdk2wyhhtsd3owc"
+    },
+    {
+      "courseName": "少体校游泳",
+      "id": "mpmjhera6lziwkf60sq",
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "studentName": "花花",
+      "time": "补签",
+      "date": "2026-05-21"
+    },
+    {
+      "date": "2026-05-26",
+      "courseId": "mpmj4hiwkfkey00cogj",
+      "time": "21:21:22",
+      "studentName": "花花",
+      "id": "mpmnyvmsm1vc87hhr9n",
+      "courseName": "英文绘本阅读"
+    },
+    {
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "time": "补签",
+      "studentName": "磊磊",
+      "date": "2026-04-15",
+      "courseName": "奥数-老庄",
+      "id": "mpmo7d9mema4pwltiwr"
+    },
+    {
+      "courseName": "奥数-老庄",
+      "id": "mpmo7gi1bt0lujuh5ya",
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "date": "2026-04-18"
+    },
+    {
+      "id": "mpmo7iejnkhymeasll",
+      "courseName": "奥数-老庄",
+      "date": "2026-04-22",
+      "studentName": "磊磊",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "time": "补签"
+    },
+    {
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "studentName": "磊磊",
+      "date": "2026-05-06",
+      "id": "mpmo7kfyw4l44lii6vk",
+      "courseName": "奥数-老庄"
+    },
+    {
+      "id": "mpmo7oitf775ajmew2v",
+      "courseName": "奥数-老庄",
+      "date": "2026-04-25",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "time": "补签",
+      "studentName": "磊磊"
+    },
+    {
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "date": "2026-04-29",
+      "id": "mpmo7qeim2nh6xf0psd",
+      "courseName": "奥数-老庄"
+    },
+    {
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "date": "2026-05-09",
+      "courseName": "奥数-老庄",
+      "id": "mpmo7uzju20na70osr"
+    },
+    {
+      "date": "2026-05-13",
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "id": "mpmo7x3jrs6sjq5j7wk",
+      "courseName": "奥数-老庄"
+    },
+    {
+      "time": "补签",
+      "studentName": "磊磊",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "date": "2026-05-16",
+      "courseName": "奥数-老庄",
+      "id": "mpmo7z3nl7c35selbei"
+    },
+    {
+      "courseName": "奥数-老庄",
+      "id": "mpmo80espsncelouqx",
+      "studentName": "磊磊",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "time": "补签",
+      "date": "2026-05-20"
+    },
+    {
+      "courseName": "奥数-老庄",
+      "id": "mpmo833fhndguxz2vz",
+      "date": "2026-05-23",
+      "time": "补签",
+      "studentName": "磊磊",
+      "courseId": "mpmo0la9o3kiw8fg25"
+    },
+    {
+      "date": "2026-05-20",
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmokuzmg69itcg35zf",
+      "courseName": "线上围棋",
+      "id": "mpmomowikyyl17z979"
+    },
+    {
+      "courseId": "mpmokuzmg69itcg35zf",
+      "time": "补签",
+      "studentName": "磊磊",
+      "date": "2026-05-13",
+      "id": "mpmomq6myz3a34ewv1",
+      "courseName": "线上围棋"
+    },
+    {
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmokuzmg69itcg35zf",
+      "date": "2026-05-06",
+      "id": "mpmomrrh4fuai5d3ak9",
+      "courseName": "线上围棋"
+    },
+    {
+      "id": "mpmomt3i0igurtd5h5ib",
+      "courseName": "线上围棋",
+      "courseId": "mpmokuzmg69itcg35zf",
+      "studentName": "磊磊",
+      "time": "补签",
+      "date": "2026-04-29"
+    },
+    {
+      "time": "补签",
+      "courseId": "mpmokuzmg69itcg35zf",
+      "studentName": "磊磊",
+      "date": "2026-04-22",
+      "courseName": "线上围棋",
+      "id": "mpmomudpn0bwuehqt3"
+    },
+    {
+      "id": "mpmomvd9vql3aquew",
+      "courseName": "线上围棋",
+      "studentName": "磊磊",
+      "courseId": "mpmokuzmg69itcg35zf",
+      "time": "补签",
+      "date": "2026-04-15"
+    },
+    {
+      "id": "mpmotrnh3rxbj9bw6kz",
+      "courseName": "游泳长训班",
+      "date": "2026-05-16",
+      "time": "补签",
+      "studentName": "磊磊",
+      "courseId": "mpmotkuf65wvm5arxdu"
+    },
+    {
+      "date": "2026-05-23",
+      "courseId": "mpmotkuf65wvm5arxdu",
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseName": "游泳长训班",
+      "id": "mpmottusea4uwhjy676"
+    },
+    {
+      "studentName": "花花",
+      "time": "补签",
+      "courseId": "mpmizaglt7thkve54lc",
+      "date": "2026-05-27",
+      "courseName": "英语自然拼读",
+      "id": "mpospl1fgcheeytfbl9"
+    },
+    {
+      "courseName": "奥数-老庄",
+      "id": "mpospmd1ilxxu7f9slo",
+      "date": "2026-05-27",
+      "studentName": "磊磊",
+      "time": "补签",
+      "courseId": "mpmo0la9o3kiw8fg25"
+    },
+    {
+      "courseName": "线上围棋",
+      "id": "mpospnuzykr0466cg3h",
+      "date": "2026-05-27",
+      "time": "补签",
+      "studentName": "磊磊",
+      "courseId": "mpmokuzmg69itcg35zf"
+    }
+  ],
+  "leaveRecords": [
+    {
+      "time": "22:47:46",
+      "courseId": "mpmo0la9o3kiw8fg25",
+      "courseName": "奥数-老庄",
+      "id": "mpmr1z0uu9bbi0py4x",
+      "studentName": "磊磊",
+      "date": "2026-05-02",
+      "reason": "未填写原因",
+      "isExtended": true,
+      "deductHours": true
+    },
+    {
+      "id": "mpmrzczodsso8ttw0ym",
+      "courseName": "少体校游泳",
+      "courseId": "mpmjgqulzfz55t1d2o",
+      "time": "23:13:43",
+      "deductHours": true,
+      "isExtended": true,
+      "reason": "未填写原因",
+      "date": "2026-05-11",
+      "studentName": "花花"
+    }
+  ],
+  "exportTime": "2026-05-28T02:08:41.084Z"
+}
